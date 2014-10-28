@@ -26,6 +26,10 @@ func (s *stepCreateDisk) Run(state multistep.StateBag) multistep.StepAction {
 		fmt.Sprintf("%vM", config.DiskSize),
 	}
 
+    if config.DiskImage == true {
+        return multistep.ActionContinue
+    }
+
 	ui.Say("Creating hard drive...")
 	if err := driver.QemuImg(command...); err != nil {
 		err := fmt.Errorf("Error creating hard drive: %s", err)
