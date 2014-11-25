@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-// This step uploads a file containing the VirtualBox version, which
+// This step uploads a file containing the Parallels version, which
 // can be useful for various provisioning reasons.
 type StepUploadVersion struct {
 	Path string
@@ -20,7 +20,7 @@ func (s *StepUploadVersion) Run(state multistep.StateBag) multistep.StepAction {
 	ui := state.Get("ui").(packer.Ui)
 
 	if s.Path == "" {
-		log.Println("VBoxVersionFile is empty. Not uploading.")
+		log.Println("ParallelsVersionFile is empty. Not uploading.")
 		return multistep.ActionContinue
 	}
 
@@ -30,11 +30,11 @@ func (s *StepUploadVersion) Run(state multistep.StateBag) multistep.StepAction {
 		return multistep.ActionHalt
 	}
 
-	ui.Say(fmt.Sprintf("Uploading VirtualBox version info (%s)", version))
+	ui.Say(fmt.Sprintf("Uploading Parallels version info (%s)", version))
 	var data bytes.Buffer
 	data.WriteString(version)
 	if err := comm.Upload(s.Path, &data, nil); err != nil {
-		state.Put("error", fmt.Errorf("Error uploading VirtualBox version: %s", err))
+		state.Put("error", fmt.Errorf("Error uploading Parallels version: %s", err))
 		return multistep.ActionHalt
 	}
 

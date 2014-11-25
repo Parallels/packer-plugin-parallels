@@ -2,27 +2,37 @@ package common
 
 import (
 	"fmt"
+	"github.com/mitchellh/packer/packer"
 	"os"
 	"path/filepath"
-
-	"github.com/mitchellh/packer/packer"
+	"regexp"
 )
 
 // This is the common builder ID to all of these artifacts.
-const BuilderId = "mitchellh.virtualbox"
+const BuilderId = "packer.parallels"
 
-// Artifact is the result of running the VirtualBox builder, namely a set
+// These are the extensions of files and directories that are unnecessary for the function
+// of a Parallels virtual machine.
+var unnecessaryFiles = []string{"\\.log$", "\\.backup$", "\\.Backup$", "\\.app"}
+
+// Artifact is the result of running the parallels builder, namely a set
 // of files associated with the resulting machine.
 type artifact struct {
 	dir string
 	f   []string
 }
 
-// NewArtifact returns a VirtualBox artifact containing the files
+// NewArtifact returns a Parallels artifact containing the files
 // in the given directory.
 func NewArtifact(dir string) (packer.Artifact, error) {
 	files := make([]string, 0, 5)
 	visit := func(path string, info os.FileInfo, err error) error {
+		for _, unnecessaryFile := range unnecessaryFiles {
+			if unnecessary, _ := regexp.MatchString(unnecessaryFile, path); unnecessary {
+				return os.RemoveAll(path)
+			}
+		}
+
 		if !info.IsDir() {
 			files = append(files, path)
 		}

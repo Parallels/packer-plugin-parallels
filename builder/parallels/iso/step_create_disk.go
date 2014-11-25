@@ -1,11 +1,11 @@
-package qemu
+package iso
 
 import (
 	"fmt"
 	"github.com/mitchellh/multistep"
+	parallelscommon "github.com/mitchellh/packer/builder/parallels/common"
 	"github.com/mitchellh/packer/packer"
-	"path/filepath"
-	"strings"
+	"strconv"
 )
 
 // This step creates the virtual disk that will be used as the
@@ -14,31 +14,25 @@ type stepCreateDisk struct{}
 
 func (s *stepCreateDisk) Run(state multistep.StateBag) multistep.StepAction {
 	config := state.Get("config").(*config)
-	driver := state.Get("driver").(Driver)
+	driver := state.Get("driver").(parallelscommon.Driver)
 	ui := state.Get("ui").(packer.Ui)
-	name := config.VMName + "." + strings.ToLower(config.Format)
-	path := filepath.Join(config.OutputDir, name)
+	vmName := state.Get("vmName").(string)
 
 	command := []string{
-		"create",
-		"-f", config.Format,
-		path,
-		fmt.Sprintf("%vM", config.DiskSize),
-	}
-
-	if config.DiskImage == true {
-		return multistep.ActionContinue
+		"set", vmName,
+		"--device-add", "hdd",
+		"--size", strconv.FormatUint(uint64(config.DiskSize), 10),
+		"--iface", config.HardDriveInterface,
 	}
 
 	ui.Say("Creating hard drive...")
-	if err := driver.QemuImg(command...); err != nil {
+	err := driver.Prlctl(command...)
+	if err != nil {
 		err := fmt.Errorf("Error creating hard drive: %s", err)
 		state.Put("error", err)
 		ui.Error(err.Error())
 		return multistep.ActionHalt
 	}
-
-	state.Put("disk_filename", name)
 
 	return multistep.ActionContinue
 }
