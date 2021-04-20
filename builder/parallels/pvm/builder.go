@@ -6,11 +6,11 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
+	parallelscommon "github.com/hashicorp/packer-plugin-parallels/builder/parallels/common"
 	"github.com/hashicorp/packer-plugin-sdk/communicator"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	"github.com/hashicorp/packer-plugin-sdk/multistep/commonsteps"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
-	parallelscommon "github.com/hashicorp/packer/builder/parallels/common"
 )
 
 // Builder implements packersdk.Builder and builds the actual Parallels

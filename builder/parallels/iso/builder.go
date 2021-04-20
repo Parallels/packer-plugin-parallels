@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2/hcldec"
+	parallelscommon "github.com/hashicorp/packer-plugin-parallels/builder/parallels/common"
 	"github.com/hashicorp/packer-plugin-sdk/bootcommand"
 	"github.com/hashicorp/packer-plugin-sdk/common"
 	"github.com/hashicorp/packer-plugin-sdk/communicator"
@@ -18,7 +19,6 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/shutdowncommand"
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
 	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
-	parallelscommon "github.com/hashicorp/packer/builder/parallels/common"
 )
 
 const BuilderId = "rickard-von-essen.parallels"

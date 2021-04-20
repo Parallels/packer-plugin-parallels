@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
+	parallelscommon "github.com/hashicorp/packer-plugin-parallels/builder/parallels/common"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
-	parallelscommon "github.com/hashicorp/packer/builder/parallels/common"
 )
 
 func testState(t *testing.T) multistep.StateBag {
