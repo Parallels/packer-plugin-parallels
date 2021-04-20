@@ -35,7 +35,7 @@ func TestIPAddress(t *testing.T) {
 10.211.55.126="1418288969,1800,001c4235240c,ff4235240c000100011c1c11ad001c4235240c"
 10.211.55.254="1411712008,1800,001c42a51419,01001c42a51419"
 `)
-	ioutil.WriteFile(tf.Name(), c, 0666)
+	_ = ioutil.WriteFile(tf.Name(), c, 0666)
 	ip, err = d.IPAddress("001C4235240c")
 	if err != nil {
 		t.Fatalf("Error: %v\n", err)
@@ -50,7 +50,7 @@ func TestIPAddress(t *testing.T) {
 10.211.55.125="1418288000,1800,001c4235240c,ff4235240c000100011c1c10e7001c4235240c"
 10.211.55.254="1411712008,1800,001c42a51419,01001c42a51419"
 `)
-	ioutil.WriteFile(tf.Name(), c, 0666)
+	_ = ioutil.WriteFile(tf.Name(), c, 0666)
 	ip, err = d.IPAddress("001c4235240c")
 	if err != nil {
 		t.Fatalf("Error: %v\n", err)
@@ -74,7 +74,7 @@ func TestXMLParseConfig(t *testing.T) {
   </SystemConfig>
 </ExampleParallelsConfig>
 `)
-	ioutil.WriteFile(td+"/config.pvs", config, 0666)
+	_ = ioutil.WriteFile(td+"/config.pvs", config, 0666)
 
 	result, err := getConfigValueFromXpath(td, "//DiskSize")
 	if err != nil {

@@ -1,13 +1,37 @@
-# Scaffolding Plugins
+# Parallels Plugin
 
-<!--
-  Include a short overview about the plugin.
+## Components
 
-  This document is a great location for creating a table of contents for each
-  of the components the plugin may provide. This document should load automatically
-  when navigating to the docs directory for a plugin.
+The Parallels Packer Plugin is able to create [Parallels Desktop for
+Mac](https://www.parallels.com/products/desktop/) virtual machines and export
+them in the PVM format.
 
--->
+The plugin comes with multiple builders able to create Parallels machines,
+depending on the strategy you want to use to build the image. Packer supports
+the following Parallels builders:
+
+- [parallels-iso](/docs/builders/parallels-iso.mdx) - Starts from an ISO
+  file, creates a brand new Parallels VM, installs an OS, provisions software
+  within the OS, then exports that machine to create an image. This is best
+  for people who want to start from scratch.
+
+- [parallels-pvm](/docs/builders/parallels-pvm.mdx) - This builder imports
+  an existing PVM file, runs provisioners on top of that VM, and exports that
+  machine to create an image. This is best if you have an existing Parallels
+  VM export you want to use as the source. As an additional benefit, you can
+  feed the artifact of this builder back into itself to iterate on a machine.
+
+## Requirements
+
+In addition to [Parallels Desktop for
+Mac](https://www.parallels.com/products/desktop/) this requires the [Parallels
+Virtualization SDK](https://www.parallels.com/downloads/desktop/).
+
+The SDK can be installed by downloading and following the instructions in the
+dmg.
+
+Parallels Desktop for Mac 9 and later is supported, from PD 11 Pro or Business
+edition is required.
 
 ## Installation
 
@@ -25,9 +49,9 @@ Then, run [`packer init`](https://www.packer.io/docs/commands/init).
 ```hcl
 packer {
   required_plugins {
-    name = {
+    parallels = {
       version = ">= 0.0.1"
-      source  = "github.com/hashicorp/name"
+      source  = "github.com/hashicorp/parallels"
     }
   }
 }
@@ -46,33 +70,7 @@ To install the plugin, please follow the Packer documentation on
 
 If you prefer to build the plugin from its source code, clone the GitHub
 repository locally and run the command `go build` from the root
-directory. Upon successful compilation, a `packer-plugin-name` plugin
+directory. Upon successful compilation, a `packer-plugin-parallels` plugin
 binary file can be found in the root directory.
 To install the compiled plugin, please follow the official Packer documentation
 on [installing a plugin](https://www.packer.io/docs/extending/plugins/#installing-plugins).
-
-
-## Plugin Contents
-
-The Scaffolding plugin is intended as a starting point for creating Packer plugins, containing:
-
-### Builders
-
-- [builder](/docs/builders/builder-name.mdx) - The scaffolding builder is used to create endless Packer
-  plugins using a consistent plugin structure.
-
-### Provisioners
-
-- [provisioner](/docs/provisioners/provisioner-name.mdx) - The scaffolding provisioner is used to provisioner
-  Packer builds.
-
-### Post-processors
-
-- [post-processor](/docs/post-processors/postprocessor-name.mdx) - The scaffolding post-processor is used to
-  export scaffolding builds.
-
-### Data Sources
-
-- [data source](/docs/datasources/datasource-name.mdx) - The scaffolding data source is used to
-  export scaffolding data.
-

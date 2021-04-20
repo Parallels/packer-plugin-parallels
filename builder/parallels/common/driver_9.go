@@ -285,7 +285,7 @@ func (d *Parallels9Driver) Version() (string, error) {
 func (d *Parallels9Driver) SendKeyScanCodes(vmName string, codes ...string) error {
 	var stdout, stderr bytes.Buffer
 
-	if codes == nil || len(codes) == 0 {
+	if len(codes) == 0 {
 		log.Printf("No scan codes to send")
 		return nil
 	}
