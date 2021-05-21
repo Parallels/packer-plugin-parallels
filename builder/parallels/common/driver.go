@@ -75,6 +75,13 @@ func NewDriver() (Driver, error) {
 			"Parallels builder works only on \"darwin\" platform!")
 	}
 
+	cmd := exec.Command("/usr/bin/python", "-c", `import prlsdkapi`)
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf(
+			"Parallels Virtualization SDK is not installed")
+	}
+
 	if prlctlPath == "" {
 		var err error
 		prlctlPath, err = exec.LookPath("prlctl")
