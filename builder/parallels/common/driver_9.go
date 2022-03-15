@@ -304,7 +304,7 @@ func (d *Parallels9Driver) SendKeyScanCodes(vmName string, codes ...string) erro
 
 	args := prepend(vmName, codes)
 	args = prepend(f.Name(), args)
-	cmd := exec.Command("/usr/bin/python", args...)
+	cmd := exec.Command("/usr/bin/python3", args...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err = cmd.Run()
