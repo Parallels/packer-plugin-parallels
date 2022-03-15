@@ -9,7 +9,7 @@ import prlsdkapi
 
 def main():
     if len(sys.argv) < 3:
-        print "Usage: prltype VM_NAME SCANCODE..."
+        print("Usage: prltype VM_NAME SCANCODE...")
         sys.exit(1)
 
     vm_name = sys.argv[1]

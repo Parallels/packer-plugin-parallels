@@ -75,7 +75,7 @@ func NewDriver() (Driver, error) {
 			"Parallels builder works only on \"darwin\" platform!")
 	}
 
-	cmd := exec.Command("/usr/bin/python", "-c", `import prlsdkapi`)
+	cmd := exec.Command("/usr/bin/python3", "-c", `import prlsdkapi`)
 	err := cmd.Run()
 	if err != nil {
 		return nil, fmt.Errorf(
