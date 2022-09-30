@@ -28,7 +28,7 @@ func (s *stepSetBootOrder) Run(ctx context.Context, state multistep.StateBag) mu
 	ui.Say("Setting the boot order...")
 	command := []string{
 		"set", vmName,
-		"--device-bootorder", fmt.Sprintf("hdd0 cdrom0 net0"),
+		"--device-bootorder", "hdd0 cdrom0 net0",
 	}
 
 	if err := driver.Prlctl(command...); err != nil {
