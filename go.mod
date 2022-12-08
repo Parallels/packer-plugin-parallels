@@ -1,6 +1,6 @@
 module github.com/hashicorp/packer-plugin-parallels
 
-go 1.17
+go 1.18
 
 require (
 	github.com/ChrisTrenkamp/goxpath v0.0.0-20210404020558-97928f7e12b6
