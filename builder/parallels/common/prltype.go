@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package common
 
 // Prltype is a Python 2 script that sends scancodes to a Parallels VM. It requires
