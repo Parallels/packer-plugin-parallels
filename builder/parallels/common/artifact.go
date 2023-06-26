@@ -5,11 +5,13 @@ package common
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
+	"github.com/hashicorp/packer-plugin-sdk/packer/registry/image"
 )
 
 // BuilderId is the common builder ID to all of these artifacts.
@@ -22,8 +24,10 @@ var unnecessaryFiles = []string{"\\.log$", "\\.backup$", "\\.Backup$", "\\.app"}
 // Artifact is the result of running the parallels builder, namely a set
 // of files associated with the resulting machine.
 type artifact struct {
-	dir string
-	f   []string
+	APIEndpoint     string
+	SourceImageList string
+	dir             string
+	f               []string
 
 	// StateData should store data such as GeneratedData
 	// to be shared with post-processors
@@ -87,9 +91,24 @@ func (a *artifact) String() string {
 }
 
 func (a *artifact) State(name string) interface{} {
+	if name == image.ArtifactStateURI {
+		return a.buildHCPackerRegistryMetadata()
+	}
 	return a.StateData[name]
 }
 
 func (a *artifact) Destroy() error {
 	return os.RemoveAll(a.dir)
+}
+
+func (a *artifact) buildHCPackerRegistryMetadata() interface{} {
+
+	img, err := image.FromArtifact(a, image.WithRegion(a.APIEndpoint), image.WithSourceID(a.SourceImageList))
+
+	if err != nil {
+		log.Printf("[TRACE] error encountered when creating HCP Packer registry image for artifact: %s", err)
+		return nil
+	}
+
+	return img
 }
