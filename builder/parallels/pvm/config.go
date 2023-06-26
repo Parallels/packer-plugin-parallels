@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 
-	parallelscommon "github.com/hashicorp/packer-plugin-parallels/builder/parallels/common"
+	parallelscommon "github.com/Parallels/packer-plugin-parallels/builder/parallels/common"
 	"github.com/hashicorp/packer-plugin-sdk/bootcommand"
 	"github.com/hashicorp/packer-plugin-sdk/common"
 	"github.com/hashicorp/packer-plugin-sdk/multistep/commonsteps"

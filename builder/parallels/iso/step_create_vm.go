@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strconv"
 
-	parallelscommon "github.com/hashicorp/packer-plugin-parallels/builder/parallels/common"
+	parallelscommon "github.com/Parallels/packer-plugin-parallels/builder/parallels/common"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 )
@@ -16,7 +16,8 @@ import (
 // This step creates the actual virtual machine.
 //
 // Produces:
-//   vmName string - The name of the VM
+//
+//	vmName string - The name of the VM
 type stepCreateVM struct {
 	vmName string
 }

@@ -29,7 +29,7 @@ packer {
 
 #### Manual installation
 
-You can find pre-built binary releases of the plugin [here](https://github.com/hashicorp/packer-plugin-parallels/releases).
+You can find pre-built binary releases of the plugin [here](https://github.com/Parallels/packer-plugin-parallels/releases).
 Once you have downloaded the latest archive corresponding to your target OS,
 uncompress it to retrieve the plugin binary file corresponding to your platform.
 To install the plugin, please follow the Packer documentation on
