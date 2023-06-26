@@ -15,9 +15,10 @@ import (
 // StepAttachFloppy is a step that attaches a floppy to the virtual machine.
 //
 // Uses:
-//   driver Driver
-//   ui packersdk.Ui
-//   vmName string
+//
+//	driver Driver
+//	ui packersdk.Ui
+//	vmName string
 //
 // Produces:
 type StepAttachFloppy struct {

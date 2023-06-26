@@ -17,9 +17,10 @@ import (
 // This step uploads the Parallels Tools ISO to the virtual machine.
 //
 // Uses:
-//   communicator packersdk.Communicator
-//   parallels_tools_path string
-//   ui packersdk.Ui
+//
+//	communicator packersdk.Communicator
+//	parallels_tools_path string
+//	ui packersdk.Ui
 //
 // Produces:
 type toolsPathTemplate struct {
@@ -30,9 +31,10 @@ type toolsPathTemplate struct {
 // to the VM.
 //
 // Uses:
-//   communicator packersdk.Communicator
-//   parallels_tools_path string
-//   ui packersdk.Ui
+//
+//	communicator packersdk.Communicator
+//	parallels_tools_path string
+//	ui packersdk.Ui
 type StepUploadParallelsTools struct {
 	ParallelsToolsFlavor    string
 	ParallelsToolsGuestPath string
