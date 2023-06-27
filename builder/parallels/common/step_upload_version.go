@@ -17,9 +17,10 @@ import (
 // Parallels Desktop, which can be useful for various provisioning reasons.
 //
 // Uses:
-//   communicator packersdk.Communicator
-//   driver Driver
-//   ui packersdk.Ui
+//
+//	communicator packersdk.Communicator
+//	driver Driver
+//	ui packersdk.Ui
 type StepUploadVersion struct {
 	Path string
 }

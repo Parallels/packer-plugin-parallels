@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"log"
 
-	parallelscommon "github.com/hashicorp/packer-plugin-parallels/builder/parallels/common"
+	parallelscommon "github.com/Parallels/packer-plugin-parallels/builder/parallels/common"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 )
@@ -16,13 +16,15 @@ import (
 // This step attaches the ISO to the virtual machine.
 //
 // Uses:
-//   driver Driver
-//   iso_path string
-//   ui packersdk.Ui
-//   vmName string
+//
+//	driver Driver
+//	iso_path string
+//	ui packersdk.Ui
+//	vmName string
 //
 // Produces:
-//	 attachedIso bool
+//
+//	attachedIso bool
 type stepAttachISO struct{}
 
 func (s *stepAttachISO) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {

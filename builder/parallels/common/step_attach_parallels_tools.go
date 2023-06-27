@@ -16,10 +16,11 @@ import (
 // as an inserted CD onto the virtual machine.
 //
 // Uses:
-//   driver Driver
-//   parallels_tools_path string
-//   ui packersdk.Ui
-//   vmName string
+//
+//	driver Driver
+//	parallels_tools_path string
+//	ui packersdk.Ui
+//	vmName string
 //
 // Produces:
 type StepAttachParallelsTools struct {

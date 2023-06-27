@@ -11,8 +11,8 @@ import (
 	"errors"
 	"fmt"
 
+	parallelscommon "github.com/Parallels/packer-plugin-parallels/builder/parallels/common"
 	"github.com/hashicorp/hcl/v2/hcldec"
-	parallelscommon "github.com/hashicorp/packer-plugin-parallels/builder/parallels/common"
 	"github.com/hashicorp/packer-plugin-sdk/bootcommand"
 	"github.com/hashicorp/packer-plugin-sdk/common"
 	"github.com/hashicorp/packer-plugin-sdk/communicator"

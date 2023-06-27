@@ -9,9 +9,9 @@ import (
 
 	"github.com/hashicorp/packer-plugin-sdk/plugin"
 
-	"github.com/hashicorp/packer-plugin-parallels/builder/parallels/iso"
-	"github.com/hashicorp/packer-plugin-parallels/builder/parallels/pvm"
-	"github.com/hashicorp/packer-plugin-parallels/version"
+	"github.com/Parallels/packer-plugin-parallels/builder/parallels/iso"
+	"github.com/Parallels/packer-plugin-parallels/builder/parallels/pvm"
+	"github.com/Parallels/packer-plugin-parallels/version"
 )
 
 func main() {

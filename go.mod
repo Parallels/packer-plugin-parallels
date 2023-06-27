@@ -1,4 +1,4 @@
-module github.com/hashicorp/packer-plugin-parallels
+module github.com/Parallels/packer-plugin-parallels
 
 go 1.18
 
