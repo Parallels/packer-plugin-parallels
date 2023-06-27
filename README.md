@@ -20,7 +20,7 @@ packer {
   required_plugins {
     parallels = {
       version = ">= 1.1.0"
-      source  = "github.com/Parallels/packer-plugin-parallels"
+      source  = "github.com/Parallels/parallels"
     }
   }
 }
