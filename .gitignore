@@ -4,3 +4,4 @@ packer-plugin-parallels
 example/output-ubuntu1804
 .docs
 crash.log
+.DS_Store
