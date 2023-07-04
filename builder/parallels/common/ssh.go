@@ -24,7 +24,7 @@ func CommHost(host string) func(multistep.StateBag) (string, error) {
 			return "", err
 		}
 
-		ip, err := driver.IPAddress(mac)
+		ip, err := driver.IPAddress(mac, vmName)
 		if err != nil {
 			return "", err
 		}

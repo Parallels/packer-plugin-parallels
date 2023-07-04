@@ -61,7 +61,7 @@ type Driver interface {
 	MAC(string) (string, error)
 
 	// Finds the IP address of a VM connected that uses DHCP by its MAC address
-	IPAddress(string) (string, error)
+	IPAddress(string, string) (string, error)
 }
 
 // NewDriver returns a new driver implementation for this version of Parallels

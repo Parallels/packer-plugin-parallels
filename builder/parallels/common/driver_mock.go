@@ -144,7 +144,7 @@ func (d *DriverMock) MAC(name string) (string, error) {
 	return d.MACReturn, d.MACError
 }
 
-func (d *DriverMock) IPAddress(mac string) (string, error) {
+func (d *DriverMock) IPAddress(mac string, vmName string) (string, error) {
 	d.IPAddressMAC = mac
 	return d.IPAddressReturn, d.IPAddressError
 }

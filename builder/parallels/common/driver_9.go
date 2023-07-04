@@ -383,7 +383,7 @@ func (d *Parallels9Driver) MAC(vmName string) (string, error) {
 // Example line:
 // 10.211.55.181="1418921112,1800,001c42f593fb,ff42f593fb000100011c25b9ff001c42f593fb"
 // IP Address   ="Lease expiry, Lease time, MAC, MAC or DUID"
-func (d *Parallels9Driver) IPAddress(mac string) (string, error) {
+func (d *Parallels9Driver) IPAddress(mac string, vmName string) (string, error) {
 
 	if len(mac) != 12 {
 		return "", fmt.Errorf("Not a valid MAC address: %s. It should be exactly 12 digits.", mac)
@@ -409,7 +409,29 @@ func (d *Parallels9Driver) IPAddress(mac string) (string, error) {
 	}
 
 	if len(mostRecentIP) == 0 {
-		return "", fmt.Errorf("IP lease not found for MAC address %s in: %s\n", mac, d.dhcpLeaseFile)
+		log.Printf("IP lease not found for MAC address %s in: %s\n", mac, d.dhcpLeaseFile)
+
+		var stdout bytes.Buffer
+		cmd := exec.Command(d.PrlctlPath, "list", vmName, "--full", "--no-header", "-o", "ip_configured")
+		cmd.Stdout = &stdout
+		if err := cmd.Run(); err != nil {
+			log.Printf("Command run failed for Virtual Machine: %s\n", vmName)
+			return "", err
+		}
+
+		stdoutString := strings.TrimSpace(stdout.String())
+		re := regexp.MustCompile(`([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)`)
+		macMatch := re.FindAllStringSubmatch(stdoutString, 1)
+
+		if len(macMatch) != 1 {
+			return "", fmt.Errorf("Unable to retrieve ip address of VM %s through tools\n", vmName)
+		}
+
+		mostRecentIP = macMatch[0][1]
+	}
+
+	if len(mostRecentIP) == 0 {
+		return "", fmt.Errorf("IP address not found for this VM: %s\n", vmName)
 	}
 
 	log.Printf("Found IP lease: %s for MAC address %s\n", mostRecentIP, mac)
