@@ -1,0 +1,13 @@
+<!-- Code generated from the comments of the IPSWConfig struct in builder/parallels/ipsw/ipsw_config.go; DO NOT EDIT MANUALLY -->
+
+- `ipsw_urls` ([]string) - Multiple URLs for the IPSW to download. Packer will try these in order.
+  If anything goes wrong attempting to download or while downloading a
+  single URL, it will move on to the next. All URLs must point to the same
+  file (same checksum). By default this is empty and `ipsw_url` is used.
+  Only one of `ipsw_url` or `ipsw_urls` can be specified.
+
+- `ipsw_target_path` (string) - The path where the ipsw should be saved after download. By default will
+  go in the packer cache, with a hash of the original filename and
+  checksum as its name.
+
+<!-- End of code generated from the comments of the IPSWConfig struct in builder/parallels/ipsw/ipsw_config.go; -->
