@@ -1,7 +1,7 @@
 // Copyright (c) HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
 
-package pvm
+package macvm
 
 import (
 	"context"
@@ -54,18 +54,9 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 
 	// Build the steps.
 	steps := []multistep.Step{
-		&parallelscommon.StepPrepareParallelsTools{
-			ParallelsToolsMode:   b.config.ParallelsToolsMode,
-			ParallelsToolsFlavor: b.config.ParallelsToolsFlavor,
-		},
 		&parallelscommon.StepOutputDir{
 			Force: b.config.PackerForce,
 			Path:  b.config.OutputDir,
-		},
-		&commonsteps.StepCreateFloppy{
-			Files:       b.config.FloppyConfig.FloppyFiles,
-			Directories: b.config.FloppyConfig.FloppyDirectories,
-			Label:       b.config.FloppyConfig.FloppyLabel,
 		},
 		&parallelscommon.StepImport{
 			Name:        b.config.VMName,
@@ -73,10 +64,6 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			OutputDir:   b.config.OutputDir,
 			ReassignMAC: b.config.ReassignMAC,
 		},
-		&parallelscommon.StepAttachParallelsTools{
-			ParallelsToolsMode: b.config.ParallelsToolsMode,
-		},
-		new(parallelscommon.StepAttachFloppy),
 		&parallelscommon.StepPrlctl{
 			Commands: b.config.Prlctl,
 			Ctx:      b.config.ctx,
@@ -98,12 +85,6 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		&parallelscommon.StepUploadVersion{
 			Path: b.config.PrlctlVersionFile,
 		},
-		&parallelscommon.StepUploadParallelsTools{
-			ParallelsToolsFlavor:    b.config.ParallelsToolsFlavor,
-			ParallelsToolsGuestPath: b.config.ParallelsToolsGuestPath,
-			ParallelsToolsMode:      b.config.ParallelsToolsMode,
-			Ctx:                     b.config.ctx,
-		},
 		new(commonsteps.StepProvision),
 		&parallelscommon.StepShutdown{
 			Command: b.config.ShutdownCommand,
@@ -115,9 +96,6 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		&parallelscommon.StepPrlctl{
 			Commands: b.config.PrlctlPost,
 			Ctx:      b.config.ctx,
-		},
-		&parallelscommon.StepCompactDisk{
-			Skip: b.config.SkipCompaction,
 		},
 	}
 
