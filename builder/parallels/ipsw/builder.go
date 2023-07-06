@@ -4,7 +4,7 @@
 //go:generate packer-sdc struct-markdown
 //go:generate packer-sdc mapstructure-to-hcl2 -type Config
 
-package iso
+package ipsw
 
 import (
 	"context"
@@ -34,8 +34,6 @@ type Builder struct {
 type Config struct {
 	common.PackerConfig                 `mapstructure:",squash"`
 	commonsteps.HTTPConfig              `mapstructure:",squash"`
-	commonsteps.ISOConfig               `mapstructure:",squash"`
-	commonsteps.FloppyConfig            `mapstructure:",squash"`
 	bootcommand.BootConfig              `mapstructure:",squash"`
 	parallelscommon.OutputConfig        `mapstructure:",squash"`
 	parallelscommon.HWConfig            `mapstructure:",squash"`
@@ -44,41 +42,17 @@ type Config struct {
 	parallelscommon.PrlctlVersionConfig `mapstructure:",squash"`
 	shutdowncommand.ShutdownConfig      `mapstructure:",squash"`
 	parallelscommon.SSHConfig           `mapstructure:",squash"`
-	parallelscommon.ToolsConfig         `mapstructure:",squash"`
+	// IPSWConfig is the configuration for the IPSW file
+	IPSWConfig IPSWConfig `mapstructure:",squash"`
 	// The size, in megabytes, of the hard disk to create
 	// for the VM. By default, this is 40000 (about 40 GB).
 	DiskSize uint `mapstructure:"disk_size" required:"false"`
-	// The type for image file based virtual disk drives,
-	// defaults to expand. Valid options are expand (expanding disk) that the
-	// image file is small initially and grows in size as you add data to it, and
-	// plain (plain disk) that the image file has a fixed size from the moment it
-	// is created (i.e the space is allocated for the full drive). Plain disks
-	// perform faster than expanding disks. skip_compaction will be set to true
-	// automatically for plain disks.
-	DiskType string `mapstructure:"disk_type" required:"false"`
-	// The guest OS type being installed. By default
-	// this is "other", but you can get dramatic performance improvements by
-	// setting this to the proper value. To view all available values for this run
-	// prlctl create x --distribution list. Setting the correct value hints to
-	// Parallels Desktop how to optimize the virtual hardware to work best with
-	// that operating system.
-	GuestOSType string `mapstructure:"guest_os_type" required:"false"`
-	// The type of controller that the hard
-	// drives are attached to, defaults to "sata". Valid options are "sata", "ide",
-	// and "scsi".
-	HardDriveInterface string `mapstructure:"hard_drive_interface" required:"false"`
 	// A list of which interfaces on the
 	// host should be searched for a IP address. The first IP address found on one
 	// of these will be used as `{{ .HTTPIP }}` in the boot_command. Defaults to
 	// ["en0", "en1", "en2", "en3", "en4", "en5", "en6", "en7", "en8", "en9",
 	// "ppp0", "ppp1", "ppp2"].
 	HostInterfaces []string `mapstructure:"host_interfaces" required:"false"`
-	// Virtual disk image is compacted at the end of
-	// the build process using prl_disk_tool utility (except for the case that
-	// disk_type is set to plain). In certain rare cases, this might corrupt
-	// the resulting disk image. If you find this to be the case, you can disable
-	// compaction using this configuration value.
-	SkipCompaction bool `mapstructure:"skip_compaction" required:"false"`
 	// This is the name of the PVM directory for the new
 	// virtual machine, without the file extension. By default this is
 	// "packer-BUILDNAME", where "BUILDNAME" is the name of the build.
@@ -111,12 +85,11 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
 	var errs *packersdk.MultiError
 	warnings := make([]string, 0)
 
-	isoWarnings, isoErrs := b.config.ISOConfig.Prepare(&b.config.ctx)
-	warnings = append(warnings, isoWarnings...)
-	errs = packersdk.MultiErrorAppend(errs, isoErrs...)
+	ipswWarnings, ipswErrs := b.config.IPSWConfig.Prepare(&b.config.ctx)
+	warnings = append(warnings, ipswWarnings...)
+	errs = packersdk.MultiErrorAppend(errs, ipswErrs...)
 
 	errs = packersdk.MultiErrorAppend(errs, b.config.HTTPConfig.Prepare(&b.config.ctx)...)
-	errs = packersdk.MultiErrorAppend(errs, b.config.FloppyConfig.Prepare(&b.config.ctx)...)
 	errs = packersdk.MultiErrorAppend(
 		errs, b.config.OutputConfig.Prepare(&b.config.ctx, &b.config.PackerConfig)...)
 	errs = packersdk.MultiErrorAppend(errs, b.config.HWConfig.Prepare(&b.config.ctx)...)
@@ -125,23 +98,10 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
 	errs = packersdk.MultiErrorAppend(errs, b.config.PrlctlVersionConfig.Prepare(&b.config.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, b.config.ShutdownConfig.Prepare(&b.config.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, b.config.SSHConfig.Prepare(&b.config.ctx)...)
-	errs = packersdk.MultiErrorAppend(errs, b.config.ToolsConfig.Prepare(&b.config.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, b.config.BootConfig.Prepare(&b.config.ctx)...)
 
 	if b.config.DiskSize == 0 {
 		b.config.DiskSize = 40000
-	}
-
-	if b.config.DiskType == "" {
-		b.config.DiskType = "expand"
-	}
-
-	if b.config.HardDriveInterface == "" {
-		b.config.HardDriveInterface = "sata"
-	}
-
-	if b.config.GuestOSType == "" {
-		b.config.GuestOSType = "other"
 	}
 
 	if len(b.config.HostInterfaces) == 0 {
@@ -151,22 +111,6 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
 
 	if b.config.VMName == "" {
 		b.config.VMName = fmt.Sprintf("packer-%s", b.config.PackerBuildName)
-	}
-
-	if b.config.DiskType != "expand" && b.config.DiskType != "plain" {
-		errs = packersdk.MultiErrorAppend(
-			errs, errors.New("disk_type can only be expand, or plain"))
-	}
-
-	if b.config.DiskType == "plain" && !b.config.SkipCompaction {
-		b.config.SkipCompaction = true
-		warnings = append(warnings,
-			"'skip_compaction' is enforced to be true for plain disks.")
-	}
-
-	if b.config.HardDriveInterface != "ide" && b.config.HardDriveInterface != "sata" && b.config.HardDriveInterface != "scsi" {
-		errs = packersdk.MultiErrorAppend(
-			errs, errors.New("hard_drive_interface can only be ide, sata, or scsi"))
 	}
 
 	// Warnings
@@ -191,40 +135,20 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 	}
 
 	steps := []multistep.Step{
-		&parallelscommon.StepPrepareParallelsTools{
-			ParallelsToolsFlavor: b.config.ParallelsToolsFlavor,
-			ParallelsToolsMode:   b.config.ParallelsToolsMode,
-		},
 		&commonsteps.StepDownload{
-			Checksum:    b.config.ISOChecksum,
-			Description: "ISO",
-			Extension:   b.config.TargetExtension,
-			ResultKey:   "iso_path",
-			TargetPath:  b.config.TargetPath,
-			Url:         b.config.ISOUrls,
+			Checksum:    b.config.IPSWConfig.IPSWChecksum,
+			Description: "IPSW",
+			Extension:   "ipsw",
+			ResultKey:   "ipsw_path",
+			TargetPath:  b.config.IPSWConfig.TargetPath,
+			Url:         b.config.IPSWConfig.IPSWUrls,
 		},
 		&parallelscommon.StepOutputDir{
 			Force: b.config.PackerForce,
 			Path:  b.config.OutputDir,
 		},
-		&commonsteps.StepCreateFloppy{
-			Files:       b.config.FloppyConfig.FloppyFiles,
-			Directories: b.config.FloppyConfig.FloppyDirectories,
-			Label:       b.config.FloppyConfig.FloppyLabel,
-		},
 		commonsteps.HTTPServerFromHTTPConfig(&b.config.HTTPConfig),
 		new(stepCreateVM),
-		new(stepCreateDisk),
-		new(stepSetBootOrder),
-		new(stepAttachISO),
-		&parallelscommon.StepAttachParallelsTools{
-			ParallelsToolsMode: b.config.ParallelsToolsMode,
-		},
-		new(parallelscommon.StepAttachFloppy),
-		&parallelscommon.StepPrlctl{
-			Commands: b.config.Prlctl,
-			Ctx:      b.config.ctx,
-		},
 		&parallelscommon.StepRun{},
 		&parallelscommon.StepTypeBootCommand{
 			BootWait:       b.config.BootWait,
@@ -242,12 +166,6 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		&parallelscommon.StepUploadVersion{
 			Path: b.config.PrlctlVersionFile,
 		},
-		&parallelscommon.StepUploadParallelsTools{
-			ParallelsToolsFlavor:    b.config.ParallelsToolsFlavor,
-			ParallelsToolsGuestPath: b.config.ParallelsToolsGuestPath,
-			ParallelsToolsMode:      b.config.ParallelsToolsMode,
-			Ctx:                     b.config.ctx,
-		},
 		new(commonsteps.StepProvision),
 		&commonsteps.StepCleanupTempKeys{
 			Comm: &b.config.SSHConfig.Comm,
@@ -259,9 +177,6 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		&parallelscommon.StepPrlctl{
 			Commands: b.config.PrlctlPost,
 			Ctx:      b.config.ctx,
-		},
-		&parallelscommon.StepCompactDisk{
-			Skip: b.config.SkipCompaction,
 		},
 	}
 

@@ -1,0 +1,16 @@
+<!-- Code generated from the comments of the Config struct in builder/parallels/ipsw/builder.go; DO NOT EDIT MANUALLY -->
+
+- `disk_size` (uint) - The size, in megabytes, of the hard disk to create
+  for the VM. By default, this is 40000 (about 40 GB).
+
+- `host_interfaces` ([]string) - A list of which interfaces on the
+  host should be searched for a IP address. The first IP address found on one
+  of these will be used as `{{ .HTTPIP }}` in the boot_command. Defaults to
+  ["en0", "en1", "en2", "en3", "en4", "en5", "en6", "en7", "en8", "en9",
+  "ppp0", "ppp1", "ppp2"].
+
+- `vm_name` (string) - This is the name of the PVM directory for the new
+  virtual machine, without the file extension. By default this is
+  "packer-BUILDNAME", where "BUILDNAME" is the name of the build.
+
+<!-- End of code generated from the comments of the Config struct in builder/parallels/ipsw/builder.go; -->

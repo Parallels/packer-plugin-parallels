@@ -76,16 +76,16 @@ POSIX-like environments (macOS, Linux, Cygwin, etc.) so you may need to
 adjust them for Windows or other shells.
 
 1. Download the Parallels plugin source (and its dependencies) by running
-   `go get github.com/hashicorp/packer-plugin-parallels`. This will download the source to
-   `$GOPATH/src/github.com/hashicorp/packer-plugin-parallels`.
+   `go get github.com/Parallels/packer-plugin-parallels`. This will download the source to
+   `$GOPATH/src/github.com/Parallels/packer-plugin-parallels`.
 
-2. When working on the Parallels plugin, first `cd $GOPATH/src/github.com/hashicorp/packer-plugin-parallels`
+2. When working on the Parallels plugin, first `cd $GOPATH/src/github.com/Parallels/packer-plugin-parallels`
    so you can run `make dev` and easily access other files. `make dev` will build the packer-plugin-parallels binary and install it under `$HOME/.packer.d/plugins/`.
 
 3. Make your changes to the Parallels plugin source. You can run `make dev` to build and install locally, and `make test` to run unit tests.
    Any compilation errors will be shown when the binaries are rebuilding. If you don't have `make` you can simply run `go build -o packer-plugin-parallels` from the project root, and `mv packer-plugin-parallels ~/.packer.d/plugins/packer-plugin-parallels` to install the plugin.
 
-4. After building the Parallels plugin successfully, use the latest version of Packer to build a machine and verify your changes. In the [example folder](https://github.com/hashicorp/packer-plugin-parallels/blob/main/example) we provide a basic template. Comment out the `packer {}` block to force Packer use the development binary installed in the previous step.
+4. After building the Parallels plugin successfully, use the latest version of Packer to build a machine and verify your changes. In the [example folder](https://github.com/Parallels/packer-plugin-parallels/blob/main/example) we provide a basic template. Comment out the `packer {}` block to force Packer use the development binary installed in the previous step.
 
 5. If everything works well and the tests pass, run `go fmt ./...` on your code before
    submitting a pull-request.
@@ -94,7 +94,7 @@ adjust them for Windows or other shells.
 ### Opening a Pull Request
 
 Thank you for contributing! When you are ready to open a pull-request, you will
-need to [fork the Parallels plugin](https://github.com/hashicorp/packer-plugin-parallels#fork-destination-box), push your
+need to [fork the Parallels plugin](https://github.com/Parallels/packer-plugin-parallels#fork-destination-box), push your
 changes to your fork, and then open a pull-request.
 
 For example, my github username is `myuser`, so I would do the following:
@@ -185,7 +185,7 @@ project. After following the steps in "Setting up Go to work on the Parallels pl
 
 1. Navigate to the code:
 
-   `cd $GOPATH/src/github.com/hashicorp/packer-plugin-parallels`
+   `cd $GOPATH/src/github.com/Parallels/packer-plugin-parallels`
 
 2. Add the remote by running:
 

@@ -26,7 +26,7 @@ func TestIPAddress(t *testing.T) {
 	}
 
 	// No lease should be found in an empty file
-	ip, err := d.IPAddress("123456789012")
+	ip, err := d.IPAddress("123456789012", "macvm")
 	if err == nil {
 		t.Fatalf("Found IP: \"%v\". No IP should be found!\n", ip)
 	}
@@ -39,7 +39,7 @@ func TestIPAddress(t *testing.T) {
 10.211.55.254="1411712008,1800,001c42a51419,01001c42a51419"
 `)
 	_ = ioutil.WriteFile(tf.Name(), c, 0666)
-	ip, err = d.IPAddress("001C4235240c")
+	ip, err = d.IPAddress("001C4235240c", "macvm")
 	if err != nil {
 		t.Fatalf("Error: %v\n", err)
 	}
@@ -54,7 +54,7 @@ func TestIPAddress(t *testing.T) {
 10.211.55.254="1411712008,1800,001c42a51419,01001c42a51419"
 `)
 	_ = ioutil.WriteFile(tf.Name(), c, 0666)
-	ip, err = d.IPAddress("001c4235240c")
+	ip, err = d.IPAddress("001c4235240c", "macvm")
 	if err != nil {
 		t.Fatalf("Error: %v\n", err)
 	}

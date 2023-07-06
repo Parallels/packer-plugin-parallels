@@ -4,7 +4,7 @@
 //go:generate packer-sdc struct-markdown
 //go:generate packer-sdc mapstructure-to-hcl2 -type Config
 
-package pvm
+package macvm
 
 import (
 	"fmt"
@@ -13,7 +13,6 @@ import (
 	parallelscommon "github.com/Parallels/packer-plugin-parallels/builder/parallels/common"
 	"github.com/hashicorp/packer-plugin-sdk/bootcommand"
 	"github.com/hashicorp/packer-plugin-sdk/common"
-	"github.com/hashicorp/packer-plugin-sdk/multistep/commonsteps"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/shutdowncommand"
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
@@ -23,7 +22,6 @@ import (
 // Config is the configuration structure for the builder.
 type Config struct {
 	common.PackerConfig                 `mapstructure:",squash"`
-	commonsteps.FloppyConfig            `mapstructure:",squash"`
 	parallelscommon.OutputConfig        `mapstructure:",squash"`
 	parallelscommon.PrlctlConfig        `mapstructure:",squash"`
 	parallelscommon.PrlctlPostConfig    `mapstructure:",squash"`
@@ -31,17 +29,10 @@ type Config struct {
 	parallelscommon.SSHConfig           `mapstructure:",squash"`
 	shutdowncommand.ShutdownConfig      `mapstructure:",squash"`
 	bootcommand.BootConfig              `mapstructure:",squash"`
-	parallelscommon.ToolsConfig         `mapstructure:",squash"`
-	// The path to a PVM directory that acts as the source
+	// The path to a MACVM directory that acts as the source
 	// of this build.
 	SourcePath string `mapstructure:"source_path" required:"true"`
-	// Virtual disk image is compacted at the end of
-	// the build process using prl_disk_tool utility (except for the case that
-	// disk_type is set to plain). In certain rare cases, this might corrupt
-	// the resulting disk image. If you find this to be the case, you can disable
-	// compaction using this configuration value.
-	SkipCompaction bool `mapstructure:"skip_compaction" required:"false"`
-	// This is the name of the PVM directory for the new
+	// This is the name of the MACVM directory for the new
 	// virtual machine, without the file extension. By default this is
 	// "packer-BUILDNAME", where "BUILDNAME" is the name of the build.
 	VMName string `mapstructure:"vm_name" required:"false"`
@@ -77,7 +68,6 @@ func (c *Config) Prepare(raws ...interface{}) ([]string, error) {
 
 	// Prepare the errors
 	var errs *packersdk.MultiError
-	errs = packersdk.MultiErrorAppend(errs, c.FloppyConfig.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.OutputConfig.Prepare(&c.ctx, &c.PackerConfig)...)
 	errs = packersdk.MultiErrorAppend(errs, c.PrlctlConfig.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.PrlctlPostConfig.Prepare(&c.ctx)...)
@@ -85,7 +75,6 @@ func (c *Config) Prepare(raws ...interface{}) ([]string, error) {
 	errs = packersdk.MultiErrorAppend(errs, c.BootConfig.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.ShutdownConfig.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.SSHConfig.Prepare(&c.ctx)...)
-	errs = packersdk.MultiErrorAppend(errs, c.ToolsConfig.Prepare(&c.ctx)...)
 
 	if c.SourcePath == "" {
 		errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("source_path is required"))

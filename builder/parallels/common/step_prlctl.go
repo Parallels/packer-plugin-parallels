@@ -21,9 +21,10 @@ type commandTemplate struct {
 // by the template.
 //
 // Uses:
-//   driver Driver
-//   ui packersdk.Ui
-//   vmName string
+//
+//	driver Driver
+//	ui packersdk.Ui
+//	vmName string
 //
 // Produces:
 type StepPrlctl struct {

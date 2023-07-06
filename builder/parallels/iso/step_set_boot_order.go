@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	parallelscommon "github.com/hashicorp/packer-plugin-parallels/builder/parallels/common"
+	parallelscommon "github.com/Parallels/packer-plugin-parallels/builder/parallels/common"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 )
@@ -15,9 +15,10 @@ import (
 // This step sets the device boot order for the virtual machine.
 //
 // Uses:
-//   driver Driver
-//   ui packersdk.Ui
-//   vmName string
+//
+//	driver Driver
+//	ui packersdk.Ui
+//	vmName string
 //
 // Produces:
 type stepSetBootOrder struct{}

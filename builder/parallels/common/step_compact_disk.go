@@ -15,12 +15,14 @@ import (
 // Parallels virtual disks and reduces the result disk size
 //
 // Uses:
-//   driver Driver
-//   vmName string
-//   ui     packersdk.Ui
+//
+//	driver Driver
+//	vmName string
+//	ui     packersdk.Ui
 //
 // Produces:
-//   <nothing>
+//
+//	<nothing>
 type StepCompactDisk struct {
 	Skip bool
 }

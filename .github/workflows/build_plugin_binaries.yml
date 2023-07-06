@@ -12,7 +12,7 @@ jobs:
   build_darwin:
     defaults:
       run:
-        working-directory: ~/go/src/github.com/hashicorp/packer-plugin-parallels
+        working-directory: ~/go/src/github.com/Parallels/packer-plugin-parallels
     runs-on: ubuntu-latest
     container:
       image: docker.mirror.hashicorp.services/cimg/go:1.18

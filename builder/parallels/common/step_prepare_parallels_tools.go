@@ -15,10 +15,12 @@ import (
 // to Parallels Tools.
 //
 // Uses:
-//   driver Driver
+//
+//	driver Driver
 //
 // Produces:
-//   parallels_tools_path string
+//
+//	parallels_tools_path string
 type StepPrepareParallelsTools struct {
 	ParallelsToolsFlavor string
 	ParallelsToolsMode   string

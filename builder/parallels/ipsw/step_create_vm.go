@@ -1,7 +1,7 @@
 // Copyright (c) HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
 
-package iso
+package ipsw
 
 import (
 	"context"
@@ -27,15 +27,16 @@ func (s *stepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	config := state.Get("config").(*Config)
 	driver := state.Get("driver").(parallelscommon.Driver)
 	ui := state.Get("ui").(packersdk.Ui)
+	ipswPath := state.Get("ipsw_path").(string)
 	name := config.VMName
 
 	commands := make([][]string, 3)
 
 	commands[0] = []string{
 		"create", name,
-		"--distribution", config.GuestOSType,
+		"-o", "macos",
+		"--restore-image", ipswPath,
 		"--dst", config.OutputDir,
-		"--no-hdd",
 	}
 	commands[1] = []string{
 		"set", name,
@@ -44,21 +45,6 @@ func (s *stepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 	commands[2] = []string{
 		"set", name,
 		"--memsize", strconv.Itoa(config.HWConfig.MemorySize),
-	}
-
-	if config.HWConfig.Sound {
-		commands = append(commands, []string{
-			"set", name,
-			"--device-add-sound",
-			"--connect",
-		})
-	}
-
-	if config.HWConfig.USB {
-		commands = append(commands, []string{
-			"set", name,
-			"--device-add-usb",
-		})
 	}
 
 	ui.Say("Creating virtual machine...")
