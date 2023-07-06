@@ -36,7 +36,7 @@ type artifact struct {
 
 // NewArtifact returns a Parallels artifact containing the files
 // in the given directory.
-func NewArtifact(dir string, generatedData map[string]interface{}) (packersdk.Artifact, error) {
+func NewArtifact(dir string, generatedData map[string]interface{}, apiEndpoint string, sourceImageList string) (packersdk.Artifact, error) {
 	files := make([]string, 0, 5)
 	visit := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -68,9 +68,11 @@ func NewArtifact(dir string, generatedData map[string]interface{}) (packersdk.Ar
 	}
 
 	return &artifact{
-		dir:       dir,
-		f:         files,
-		StateData: generatedData,
+		APIEndpoint:     apiEndpoint,
+		SourceImageList: sourceImageList,
+		dir:             dir,
+		f:               files,
+		StateData:       generatedData,
 	}, nil
 }
 
@@ -91,6 +93,8 @@ func (a *artifact) String() string {
 }
 
 func (a *artifact) State(name string) interface{} {
+	log.Printf("[TRACE] Artifact State is %s", name)
+
 	if name == image.ArtifactStateURI {
 		return a.buildHCPackerRegistryMetadata()
 	}
@@ -102,8 +106,15 @@ func (a *artifact) Destroy() error {
 }
 
 func (a *artifact) buildHCPackerRegistryMetadata() interface{} {
+	region := a.APIEndpoint
+	if region == "" {
+		region = "local"
+	}
 
-	img, err := image.FromArtifact(a, image.WithRegion(a.APIEndpoint), image.WithSourceID(a.SourceImageList))
+	log.Printf("[TRACE] Region is %s", a.APIEndpoint)
+	log.Printf("[TRACE] SourceId is %s", a.SourceImageList)
+
+	img, err := image.FromArtifact(a, image.WithRegion(region), image.WithSourceID(a.SourceImageList))
 
 	if err != nil {
 		log.Printf("[TRACE] error encountered when creating HCP Packer registry image for artifact: %s", err)
