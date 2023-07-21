@@ -163,22 +163,31 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			Host:      parallelscommon.CommHost(b.config.SSHConfig.Comm.Host()),
 			SSHConfig: b.config.SSHConfig.Comm.SSHConfigFunc(),
 		},
-		&parallelscommon.StepUploadVersion{
-			Path: b.config.PrlctlVersionFile,
-		},
-		new(commonsteps.StepProvision),
-		&commonsteps.StepCleanupTempKeys{
-			Comm: &b.config.SSHConfig.Comm,
-		},
-		&parallelscommon.StepShutdown{
-			Command: b.config.ShutdownCommand,
-			Timeout: b.config.ShutdownTimeout,
-		},
+	}
+
+	//Add post-communitcation steps
+	if b.config.SSHConfig.Comm.Type != "none" {
+		steps = append(steps, []multistep.Step{
+			&parallelscommon.StepUploadVersion{
+				Path: b.config.PrlctlVersionFile,
+			},
+			new(commonsteps.StepProvision),
+			&commonsteps.StepCleanupTempKeys{
+				Comm: &b.config.SSHConfig.Comm,
+			},
+			&parallelscommon.StepShutdown{
+				Command: b.config.ShutdownCommand,
+				Timeout: b.config.ShutdownTimeout,
+			},
+		}...)
+	}
+
+	steps = append(steps, []multistep.Step{
 		&parallelscommon.StepPrlctl{
 			Commands: b.config.PrlctlPost,
 			Ctx:      b.config.ctx,
 		},
-	}
+	}...)
 
 	// Setup the state bag
 	state := new(multistep.BasicStateBag)
