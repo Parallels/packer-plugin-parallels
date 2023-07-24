@@ -23,33 +23,6 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/tmp"
 )
 
-// Helper function to get verison number of prlctl
-func getPrlctlVersion() string {
-	var stdout, stderr bytes.Buffer
-
-	cmd := exec.Command("prlctl", "--version")
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-
-	stdoutString := strings.TrimSpace(stdout.String())
-	stderrString := strings.TrimSpace(stderr.String())
-
-	if _, ok := err.(*exec.ExitError); ok {
-		err = fmt.Errorf("prltype error: %s", stderrString)
-	}
-
-	log.Printf("stdout: %s", stdoutString)
-	log.Printf("stderr: %s", stderrString)
-
-	versionList := strings.Split(stdoutString, " ")
-	prlctlVersionStr := ""
-	if len(versionList) >= 3 {
-		prlctlVersionStr = versionList[2]
-	}
-	return prlctlVersionStr
-}
-
 // Struct to format Scancodes in JSON
 type ScanCodes struct {
 	Scancode int64  `json:"scancode"`
@@ -379,10 +352,14 @@ func (d *Parallels9Driver) SendKeyScanCodes(vmName string, codes ...string) erro
 		return nil
 	}
 
-	prlctlVersion, verErr := version.NewVersion(getPrlctlVersion())
+	prlctlCurrVersionStr, verErr := d.Version()
+	if verErr != nil {
+		return err
+	}
+	prlctlCurrVersion, _ := version.NewVersion(prlctlCurrVersionStr)
 	v2, _ := version.NewVersion("19.0.0")
 
-	if verErr != nil || prlctlVersion.LessThan(v2) {
+	if verErr != nil || prlctlCurrVersion.LessThan(v2) {
 
 		f, err := tmp.File("prltype")
 		if err != nil {
