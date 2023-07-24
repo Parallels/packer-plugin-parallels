@@ -5,6 +5,7 @@ package common
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -18,8 +19,112 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/packer-plugin-sdk/tmp"
 )
+
+// Helper function to get verison number of prlctl
+func getPrlctlVersion() string {
+	var stdout, stderr bytes.Buffer
+
+	cmd := exec.Command("prlctl", "--version")
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+
+	stdoutString := strings.TrimSpace(stdout.String())
+	stderrString := strings.TrimSpace(stderr.String())
+
+	if _, ok := err.(*exec.ExitError); ok {
+		err = fmt.Errorf("prltype error: %s", stderrString)
+	}
+
+	log.Printf("stdout: %s", stdoutString)
+	log.Printf("stderr: %s", stderrString)
+
+	versionList := strings.Split(stdoutString, " ")
+	prlctlVersionStr := ""
+	if len(versionList) >= 3 {
+		prlctlVersionStr = versionList[2]
+	}
+	return prlctlVersionStr
+}
+
+// Struct to format Scancodes in JSON
+type ScanCodes struct {
+	Scancode int64  `json:"scancode"`
+	Event    string `json:"event"`
+	Delay    int    `json:"delay"`
+}
+
+// sending scancodes to VM via prlctl CMD
+func sendJsonScancodes(vmName string, inputScanCodes []string) error {
+	scancodeData := []ScanCodes{}
+
+	log.Println("scancodes received for JSON encoding ", inputScanCodes)
+	delay := 100
+	for i := 0; i < len(inputScanCodes); i++ {
+		key1, convErr_ := strconv.ParseInt(inputScanCodes[i], 16, 64)
+		if convErr_ != nil {
+			log.Println(convErr_, "conversion error for %s", inputScanCodes[i])
+			return convErr_
+		}
+
+		if key1 == 224 {
+			key2, convErr_ := strconv.ParseInt(inputScanCodes[i+1], 16, 64)
+			i = i + 1
+			if convErr_ != nil {
+				log.Println(convErr_, "conversion error for %s", inputScanCodes[i])
+				return convErr_
+			}
+			if key2 < 128 {
+				scancodeData = append(scancodeData, ScanCodes{Scancode: key1, Event: "press", Delay: delay})
+				scancodeData = append(scancodeData, ScanCodes{Scancode: key2, Event: "press", Delay: delay})
+			} else {
+				scancodeData = append(scancodeData, ScanCodes{Scancode: key1, Event: "release", Delay: delay})
+				scancodeData = append(scancodeData, ScanCodes{Scancode: key2 - 128, Event: "release", Delay: delay})
+			}
+		} else if key1 < 128 {
+			scancodeData = append(scancodeData, ScanCodes{Scancode: key1, Event: "press", Delay: delay})
+		} else {
+			scancodeData = append(scancodeData, ScanCodes{Scancode: key1 - 128, Event: "release", Delay: delay})
+		}
+	}
+	jsonFormat, err := json.MarshalIndent(scancodeData, "", "\t")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	log.Printf("complete scancode data in JSON format %s", string(jsonFormat))
+
+	var str string = "prlctl send-key-event " + vmName + " " + " -j " + string(jsonFormat)
+	log.Println("prlctl command to send scancodes ", str)
+
+	/* Enable this when prlctl send-key-evnt cmd is available
+
+	cmd := exec.Command("prlctl send-key-event", vmName, "-j", string(jsonFormat))
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+	os.Remove(f.Name())
+
+	stdoutString := strings.TrimSpace(stdout.String())
+	stderrString := strings.TrimSpace(stderr.String())
+
+	if _, ok := err.(*exec.ExitError); ok {
+		err = fmt.Errorf("prlctl error: %s", stderrString)
+	}
+
+	log.Printf("stdout: %s", stdoutString)
+	log.Printf("stderr: %s", stderrString)
+
+	if err != nil {
+		log.Println(err)
+		return err
+	} */
+	return nil
+}
 
 // Parallels9Driver is a base type for Parallels builders.
 type Parallels9Driver struct {
@@ -287,41 +392,55 @@ func (d *Parallels9Driver) Version() (string, error) {
 // It is performed using "Prltype" script (refer to "prltype.go").
 func (d *Parallels9Driver) SendKeyScanCodes(vmName string, codes ...string) error {
 	var stdout, stderr bytes.Buffer
+	var err error
 
 	if len(codes) == 0 {
 		log.Printf("No scan codes to send")
 		return nil
 	}
 
-	f, err := tmp.File("prltype")
-	if err != nil {
-		return err
+	prlctlVersion, verErr := version.NewVersion(getPrlctlVersion())
+	v2, _ := version.NewVersion("19.0.0")
+
+	if verErr != nil || prlctlVersion.LessThan(v2) {
+
+		f, err := tmp.File("prltype")
+		if err != nil {
+			return err
+		}
+		defer os.Remove(f.Name())
+
+		script := []byte(Prltype)
+		_, err = f.Write(script)
+		if err != nil {
+			return err
+		}
+
+		args := prepend(vmName, codes)
+		args = prepend(f.Name(), args)
+		cmd := exec.Command("/usr/bin/python3", args...)
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+		err = cmd.Run()
+
+		stdoutString := strings.TrimSpace(stdout.String())
+		stderrString := strings.TrimSpace(stderr.String())
+
+		if _, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("prltype error: %s", stderrString)
+			return err
+		}
+
+		log.Printf("stdout: %s", stdoutString)
+		log.Printf("stderr: %s", stderrString)
+		// TO DO Remove this
+		log.Printf("------START--------")
+		sendJsonScancodes(vmName, codes)
+		log.Printf("------END-----------")
+		// ---
+	} else {
+		err = sendJsonScancodes(vmName, codes)
 	}
-	defer os.Remove(f.Name())
-
-	script := []byte(Prltype)
-	_, err = f.Write(script)
-	if err != nil {
-		return err
-	}
-
-	args := prepend(vmName, codes)
-	args = prepend(f.Name(), args)
-	cmd := exec.Command("/usr/bin/python3", args...)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err = cmd.Run()
-
-	stdoutString := strings.TrimSpace(stdout.String())
-	stderrString := strings.TrimSpace(stderr.String())
-
-	if _, ok := err.(*exec.ExitError); ok {
-		err = fmt.Errorf("prltype error: %s", stderrString)
-	}
-
-	log.Printf("stdout: %s", stdoutString)
-	log.Printf("stderr: %s", stderrString)
-
 	return err
 }
 
