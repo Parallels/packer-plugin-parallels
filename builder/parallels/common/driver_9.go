@@ -63,14 +63,14 @@ func (d *Parallels9Driver) sendJsonScancodes(vmName string, inputScanCodes []str
 			scancodeData = append(scancodeData, ScanCodes{Scancode: key1 - 128, Event: "release", Delay: delay})
 		}
 	}
-	jsonFormat, err := json.MarshalIndent(scancodeData, "", "\t")
+	jsonFormat, err := json.Marshal(scancodeData)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
 	log.Printf("complete scancode data in JSON format %s", jsonFormat)
-	err = d.Prlctl("send-key-event", vmName, "-j", fmt.Sprintf("%s", jsonFormat))
+	err = d.Prlctl("send-key-event", vmName, "-j", string(jsonFormat))
 
 	if err != nil {
 		log.Println(err)
@@ -343,6 +343,8 @@ func (d *Parallels9Driver) Version() (string, error) {
 
 // SendKeyScanCodes sends the specified scancodes as key events to the VM.
 // It is performed using "Prltype" script (refer to "prltype.go").
+// scancodes are sent by using python SDK if version is  < 19.0.0
+// scancodes are sent by using prlctl CMD if version is  >= 19.0.0
 func (d *Parallels9Driver) SendKeyScanCodes(vmName string, codes ...string) error {
 	var stdout, stderr bytes.Buffer
 	var err error
