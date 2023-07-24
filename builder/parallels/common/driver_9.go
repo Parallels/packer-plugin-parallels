@@ -58,7 +58,7 @@ type ScanCodes struct {
 }
 
 // sending scancodes to VM via prlctl CMD
-func sendJsonScancodes(vmName string, inputScanCodes []string) error {
+func (d *Parallels9Driver) sendJsonScancodes(vmName string, inputScanCodes []string) error {
 	scancodeData := []ScanCodes{}
 
 	log.Println("scancodes received for JSON encoding ", inputScanCodes)
@@ -96,33 +96,13 @@ func sendJsonScancodes(vmName string, inputScanCodes []string) error {
 		return err
 	}
 
-	log.Printf("complete scancode data in JSON format %s", string(jsonFormat))
-
-	var str string = "prlctl send-key-event " + vmName + " " + " -j " + string(jsonFormat)
-	log.Println("prlctl command to send scancodes ", str)
-
-	/* Enable this when prlctl send-key-evnt cmd is available
-
-	cmd := exec.Command("prlctl send-key-event", vmName, "-j", string(jsonFormat))
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err = cmd.Run()
-	os.Remove(f.Name())
-
-	stdoutString := strings.TrimSpace(stdout.String())
-	stderrString := strings.TrimSpace(stderr.String())
-
-	if _, ok := err.(*exec.ExitError); ok {
-		err = fmt.Errorf("prlctl error: %s", stderrString)
-	}
-
-	log.Printf("stdout: %s", stdoutString)
-	log.Printf("stderr: %s", stderrString)
+	log.Printf("complete scancode data in JSON format %s", jsonFormat)
+	err = d.Prlctl("send-key-event", vmName, "-j", fmt.Sprintf("%s", jsonFormat))
 
 	if err != nil {
 		log.Println(err)
 		return err
-	} */
+	}
 	return nil
 }
 
@@ -433,13 +413,8 @@ func (d *Parallels9Driver) SendKeyScanCodes(vmName string, codes ...string) erro
 
 		log.Printf("stdout: %s", stdoutString)
 		log.Printf("stderr: %s", stderrString)
-		// TO DO Remove this
-		log.Printf("------START--------")
-		sendJsonScancodes(vmName, codes)
-		log.Printf("------END-----------")
-		// ---
 	} else {
-		err = sendJsonScancodes(vmName, codes)
+		err = d.sendJsonScancodes(vmName, codes)
 	}
 	return err
 }
