@@ -30,7 +30,7 @@ type ScanCodes struct {
 	Delay    int    `json:"delay"`
 }
 
-// sending scancodes to VM via prlctl CMD
+// sending scancodes to VM via prlctl send-key-event CMD
 func (d *Parallels9Driver) sendJsonScancodes(vmName string, inputScanCodes []string) error {
 	scancodeData := []ScanCodes{}
 
@@ -63,14 +63,27 @@ func (d *Parallels9Driver) sendJsonScancodes(vmName string, inputScanCodes []str
 			scancodeData = append(scancodeData, ScanCodes{Scancode: key1 - 128, Event: "release", Delay: delay})
 		}
 	}
-	jsonFormat, err := json.Marshal(scancodeData)
+
+	jsonFormat, err := json.MarshalIndent(scancodeData, "", "\t")
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-
 	log.Printf("complete scancode data in JSON format %s", jsonFormat)
-	err = d.Prlctl("send-key-event", vmName, "-j", string(jsonFormat))
+
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command(d.PrlctlPath, "send-key-event", vmName, "-j")
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	cmd.Stdin = strings.NewReader(string(jsonFormat))
+	err = cmd.Run()
+	stdoutString := strings.TrimSpace(stdout.String())
+	stderrString := strings.TrimSpace(stderr.String())
+	if _, ok := err.(*exec.ExitError); ok {
+		err = fmt.Errorf("prlctl error: %s", stderrString)
+	}
+	log.Printf("stdout: %s", stdoutString)
+	log.Printf("stderr: %s", stderrString)
 
 	if err != nil {
 		log.Println(err)
@@ -342,8 +355,7 @@ func (d *Parallels9Driver) Version() (string, error) {
 }
 
 // SendKeyScanCodes sends the specified scancodes as key events to the VM.
-// It is performed using "Prltype" script (refer to "prltype.go").
-// scancodes are sent by using python SDK if version is  < 19.0.0
+// It is performed using "Prltype" script (refer to "prltype.go") if version is  < 19.0.0.
 // scancodes are sent by using prlctl CMD if version is  >= 19.0.0
 func (d *Parallels9Driver) SendKeyScanCodes(vmName string, codes ...string) error {
 	var stdout, stderr bytes.Buffer
