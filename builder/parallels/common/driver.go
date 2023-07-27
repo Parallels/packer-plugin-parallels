@@ -6,10 +6,14 @@ package common
 import (
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/hashicorp/go-version"
 )
 
 // Driver is the interface that talks to Parallels and performs certain
@@ -78,13 +82,6 @@ func NewDriver() (Driver, error) {
 			"Parallels builder works only on \"darwin\" platform!")
 	}
 
-	cmd := exec.Command("/usr/bin/python3", "-c", `import prlsdkapi`)
-	err := cmd.Run()
-	if err != nil {
-		return nil, fmt.Errorf(
-			"Parallels Virtualization SDK is not installed")
-	}
-
 	if prlctlPath == "" {
 		var err error
 		prlctlPath, err = exec.LookPath("prlctl")
@@ -92,8 +89,12 @@ func NewDriver() (Driver, error) {
 			return nil, err
 		}
 	}
-
 	log.Printf("prlctl path: %s", prlctlPath)
+
+	err := checkforPythonSDK(prlctlPath)
+	if err != nil {
+		return nil, err
+	}
 
 	if prlsrvctlPath == "" {
 		var err error
@@ -150,4 +151,38 @@ func NewDriver() (Driver, error) {
 	return nil, fmt.Errorf(
 		"Unable to initialize any driver. Supported Parallels Desktop versions: "+
 			"%s\n", strings.Join(supportedVersions, ", "))
+}
+
+// checks for pyhton SDK if if version is less than 19.0.0
+
+func checkforPythonSDK(prlctlPath string) error {
+
+	out, err := exec.Command(prlctlPath, "--version").Output()
+	if err != nil {
+		return err
+	}
+
+	versionRe := regexp.MustCompile(`prlctl version (\d+\.\d+.\d+)`)
+	matches := versionRe.FindStringSubmatch(string(out))
+	if matches == nil {
+		return fmt.Errorf(
+			"Could not find Parallels Desktop version in output:\n%s", string(out))
+	}
+
+	prlctlCurrVersionStr := matches[1]
+	prlctlCurrVersion, _ := version.NewVersion(prlctlCurrVersionStr)
+	v2, verErr := version.NewVersion("19.0.0")
+
+	if verErr != nil && prlctlCurrVersion.LessThan(v2) {
+		pyPath := os.Getenv("PYTHONPATH")
+		os.Setenv("PYTHONPATH", pyPath+":/Library/Frameworks/ParallelsVirtualizationSDK.framework/Versions/Current/Libraries/Python/3.7")
+		cmd := exec.Command("/usr/bin/python3", "-c", `import prlsdkapi`)
+		err = cmd.Run()
+		if err != nil {
+			return fmt.Errorf(
+				"Parallels Virtualization SDK is not installed")
+		}
+	}
+
+	return nil
 }

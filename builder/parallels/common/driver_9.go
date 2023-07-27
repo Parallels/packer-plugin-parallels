@@ -5,6 +5,7 @@ package common
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -18,8 +19,78 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/packer-plugin-sdk/tmp"
 )
+
+// Struct to format Scancodes in JSON
+type ScanCodes struct {
+	Scancode int64  `json:"scancode"`
+	Event    string `json:"event"`
+	Delay    int    `json:"delay"`
+}
+
+// sending scancodes to VM via prlctl send-key-event CMD
+func (d *Parallels9Driver) sendJsonScancodes(vmName string, inputScanCodes []string) error {
+	scancodeData := []ScanCodes{}
+
+	log.Println("scancodes received for JSON encoding ", inputScanCodes)
+	delay := 100
+	for i := 0; i < len(inputScanCodes); i++ {
+		key1, convErr_ := strconv.ParseInt(inputScanCodes[i], 16, 64)
+		if convErr_ != nil {
+			log.Println(convErr_, "conversion error for %s", inputScanCodes[i])
+			return convErr_
+		}
+
+		if key1 == 224 {
+			key2, convErr_ := strconv.ParseInt(inputScanCodes[i+1], 16, 64)
+			i = i + 1
+			if convErr_ != nil {
+				log.Println(convErr_, "conversion error for %s", inputScanCodes[i])
+				return convErr_
+			}
+			if key2 < 128 {
+				scancodeData = append(scancodeData, ScanCodes{Scancode: key1, Event: "press", Delay: delay})
+				scancodeData = append(scancodeData, ScanCodes{Scancode: key2, Event: "press", Delay: delay})
+			} else {
+				scancodeData = append(scancodeData, ScanCodes{Scancode: key1, Event: "release", Delay: delay})
+				scancodeData = append(scancodeData, ScanCodes{Scancode: key2 - 128, Event: "release", Delay: delay})
+			}
+		} else if key1 < 128 {
+			scancodeData = append(scancodeData, ScanCodes{Scancode: key1, Event: "press", Delay: delay})
+		} else {
+			scancodeData = append(scancodeData, ScanCodes{Scancode: key1 - 128, Event: "release", Delay: delay})
+		}
+	}
+
+	jsonFormat, err := json.MarshalIndent(scancodeData, "", "\t")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	log.Printf("complete scancode data in JSON format %s", jsonFormat)
+
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command(d.PrlctlPath, "send-key-event", vmName, "-j")
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	cmd.Stdin = strings.NewReader(string(jsonFormat))
+	err = cmd.Run()
+	stdoutString := strings.TrimSpace(stdout.String())
+	stderrString := strings.TrimSpace(stderr.String())
+	if _, ok := err.(*exec.ExitError); ok {
+		err = fmt.Errorf("prlctl error: %s", stderrString)
+	}
+	log.Printf("stdout: %s", stdoutString)
+	log.Printf("stderr: %s", stderrString)
+
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
 
 // Parallels9Driver is a base type for Parallels builders.
 type Parallels9Driver struct {
@@ -284,44 +355,58 @@ func (d *Parallels9Driver) Version() (string, error) {
 }
 
 // SendKeyScanCodes sends the specified scancodes as key events to the VM.
-// It is performed using "Prltype" script (refer to "prltype.go").
+// It is performed using "Prltype" script (refer to "prltype.go") if version is  < 19.0.0.
+// scancodes are sent by using prlctl CMD if version is  >= 19.0.0
 func (d *Parallels9Driver) SendKeyScanCodes(vmName string, codes ...string) error {
 	var stdout, stderr bytes.Buffer
+	var err error
 
 	if len(codes) == 0 {
 		log.Printf("No scan codes to send")
 		return nil
 	}
 
-	f, err := tmp.File("prltype")
-	if err != nil {
+	prlctlCurrVersionStr, verErr := d.Version()
+	if verErr != nil {
 		return err
 	}
-	defer os.Remove(f.Name())
+	prlctlCurrVersion, _ := version.NewVersion(prlctlCurrVersionStr)
+	v2, _ := version.NewVersion("19.0.0")
 
-	script := []byte(Prltype)
-	_, err = f.Write(script)
-	if err != nil {
-		return err
+	if verErr != nil && prlctlCurrVersion.LessThan(v2) {
+
+		f, err := tmp.File("prltype")
+		if err != nil {
+			return err
+		}
+		defer os.Remove(f.Name())
+
+		script := []byte(Prltype)
+		_, err = f.Write(script)
+		if err != nil {
+			return err
+		}
+
+		args := prepend(vmName, codes)
+		args = prepend(f.Name(), args)
+		cmd := exec.Command("/usr/bin/python3", args...)
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+		err = cmd.Run()
+
+		stdoutString := strings.TrimSpace(stdout.String())
+		stderrString := strings.TrimSpace(stderr.String())
+
+		if _, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("prltype error: %s", stderrString)
+			return err
+		}
+
+		log.Printf("stdout: %s", stdoutString)
+		log.Printf("stderr: %s", stderrString)
+	} else {
+		err = d.sendJsonScancodes(vmName, codes)
 	}
-
-	args := prepend(vmName, codes)
-	args = prepend(f.Name(), args)
-	cmd := exec.Command("/usr/bin/python3", args...)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err = cmd.Run()
-
-	stdoutString := strings.TrimSpace(stdout.String())
-	stderrString := strings.TrimSpace(stderr.String())
-
-	if _, ok := err.(*exec.ExitError); ok {
-		err = fmt.Errorf("prltype error: %s", stderrString)
-	}
-
-	log.Printf("stdout: %s", stdoutString)
-	log.Printf("stderr: %s", stderrString)
-
 	return err
 }
 
