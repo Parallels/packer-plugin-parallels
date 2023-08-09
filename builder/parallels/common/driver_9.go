@@ -373,7 +373,7 @@ func (d *Parallels9Driver) SendKeyScanCodes(vmName string, codes ...string) erro
 	prlctlCurrVersion, _ := version.NewVersion(prlctlCurrVersionStr)
 	v2, _ := version.NewVersion("19.0.0")
 
-	if verErr != nil && prlctlCurrVersion.LessThan(v2) {
+	if prlctlCurrVersion.LessThan(v2) {
 
 		f, err := tmp.File("prltype")
 		if err != nil {
