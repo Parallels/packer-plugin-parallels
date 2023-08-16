@@ -36,7 +36,7 @@ the following Parallels builders:
 
 In addition to [Parallels Desktop for
 Mac](https://www.parallels.com/products/desktop/) this requires the [Parallels
-Virtualization SDK](https://www.parallels.com/downloads/desktop/).
+Virtualization SDK](https://www.parallels.com/downloads/desktop/) only if you are using Parallels Desktop for Mac v18 or below.
 
 The SDK can be installed by downloading and following the instructions in the
 dmg.
