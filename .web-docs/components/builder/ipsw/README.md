@@ -1,9 +1,10 @@
-Type: `parallels-iso`
+Type: `parallels-ipsw`
 Artifact BuilderId: `packer.parallels`
 
 The Parallels Packer builder is able to create [Parallels Desktop for
 Mac](https://www.parallels.com/products/desktop/) virtual machines and export
-them in the PVM format, starting from an ISO image.
+them in the MACVM format, starting from an IPSW image. This IPSW builder is
+applicable for macOS VMs in Apple Silicon Chip systems only.
 
 The builder builds a virtual machine by creating a new virtual machine from
 scratch, booting it, installing an OS, provisioning software within the OS, then
@@ -13,20 +14,32 @@ all the files necessary to run the virtual machine portably.
 ## Basic Example
 
 Here is a basic example. This example is not functional. It will start the OS
-installer but then fail because we don't provide the preseed file for Ubuntu to
-self-install. Still, the example serves to show the basic configuration:
+installer and then select the country. It is up to you to add the rest of the
+boot commands to actually install the OS. You can refer to [packer examples](https://github.com/Parallels/packer-examples/tree/main/macos).
 
-```json
-{
-  "type": "parallels-iso",
-  "guest_os_type": "ubuntu",
-  "iso_url": "http://releases.ubuntu.com/12.04/ubuntu-12.04.3-server-amd64.iso",
-  "iso_checksum": "2cbe868812a871242cdcdd8f2fd6feb9",
-  "parallels_tools_flavor": "lin",
-  "ssh_username": "packer",
-  "ssh_password": "packer",
-  "ssh_timeout": "30s",
-  "shutdown_command": "echo 'packer' | sudo -S shutdown -P now"
+```hcl
+source "parallels-ipsw" "macvm_automated" {
+  boot_command         = ["<wait><enter><wait2s><enter><wait20s>", # Wait for boot
+                          "<leftShiftOn><tab><leftShiftOff><spacebar><wait5s>", # Select country
+                          ]
+  boot_wait            = "4m"
+  shutdown_command     = "sudo shutdown -h now"
+  ipsw_url             = "https://updates.cdn-apple.com/2023SpringFCS/fullrestores/042-01877/2F49A9FE-7033-41D0-9D0C-64EFCE6B4C22/UniversalMac_13.4.1_22F82_Restore.ipsw"
+  ipsw_checksum        = "md5:acd17423a6de261121454513f0a2b814"
+  ssh_password         = "parallels"
+  ssh_username         = "parallels"
+  vm_name              = "macOS"
+  cpus                 = "4"
+  memory               = "8192"
+}
+
+build {
+  sources = ["source.parallels-ipsw.macvm_automated"]
+
+  provisioner "shell" {
+    inline = ["echo 'Running provisioner script'", "# Additional commands here"]
+  }
+
 }
 ```
 
@@ -42,20 +55,13 @@ category, the available options are alphabetized and described.
 
 In addition to the options listed here, a
 [communicator](/packer/docs/templates/legacy_json_templates/communicator) can be configured for this
-builder. In addition to the options defined there, a private key file
-can also be supplied to override the typical auto-generated key:
+builder. Setting communicator to "none" disables the communicator. The default
+communicator is "ssh".
 
-- `ssh_private_key_file` (string) - Path to a PEM encoded private key file to use to authenticate with SSH.
-  The `~` can be used in path and will be expanded to the home directory
-  of current user.
-
-
-## ISO Configuration Reference
-
-<!-- Code generated from the comments of the ISOConfig struct in multistep/commonsteps/iso_config.go; DO NOT EDIT MANUALLY -->
+## IPSW Configuration Reference
 
 By default, Packer will symlink, download or copy image files to the Packer
-cache into a "`hash($iso_url+$iso_checksum).$iso_target_extension`" file.
+cache into a "`hash($ipsw_url+$ipsw_checksum).ipsw`" file.
 Packer uses [hashicorp/go-getter](https://github.com/hashicorp/go-getter) in
 file mode in order to perform a download.
 
@@ -68,36 +74,36 @@ go-getter supports the following protocols:
 * Amazon S3
 
 Examples:
-go-getter can guess the checksum type based on `iso_checksum` length, and it is
+go-getter can guess the checksum type based on `ipsw_checksum` length, and it is
 also possible to specify the checksum type.
 
 In JSON:
 
 ```json
 
-	"iso_checksum": "946a6077af6f5f95a51f82fdc44051c7aa19f9cfc5f737954845a6050543d7c2",
-	"iso_url": "ubuntu.org/.../ubuntu-14.04.1-server-amd64.iso"
+	"ipsw_checksum": "946a6077af6f5f95a51f82fdc44051c7aa19f9cfc5f737954845a6050543d7c2",
+	"ipsw_url": "apple.com/.../UniversalMac_13.5_22G74_Restore.ipsw"
 
 ```
 
 ```json
 
-	"iso_checksum": "file:ubuntu.org/..../ubuntu-14.04.1-server-amd64.iso.sum",
-	"iso_url": "ubuntu.org/.../ubuntu-14.04.1-server-amd64.iso"
+	"ipsw_checksum": "file:apple.com/.../UniversalMac_13.5_22G74_Restore.ipsw.sum",
+	"ipsw_url": "apple.com/.../UniversalMac_13.5_22G74_Restore.ipsw"
 
 ```
 
 ```json
 
-	"iso_checksum": "file://./shasums.txt",
-	"iso_url": "ubuntu.org/.../ubuntu-14.04.1-server-amd64.iso"
+	"ipsw_checksum": "file://./shasums.txt",
+	"ipsw_url": "apple.com/.../UniversalMac_13.5_22G74_Restore.ipsw"
 
 ```
 
 ```json
 
-	"iso_checksum": "file:./shasums.txt",
-	"iso_url": "ubuntu.org/.../ubuntu-14.04.1-server-amd64.iso"
+	"ipsw_checksum": "file:./shasums.txt",
+	"ipsw_url": "apple.com/.../UniversalMac_13.5_22G74_Restore.ipsw"
 
 ```
 
@@ -105,40 +111,37 @@ In HCL2:
 
 ```hcl
 
-	iso_checksum = "946a6077af6f5f95a51f82fdc44051c7aa19f9cfc5f737954845a6050543d7c2"
-	iso_url = "ubuntu.org/.../ubuntu-14.04.1-server-amd64.iso"
+	ipsw_checksum = "946a6077af6f5f95a51f82fdc44051c7aa19f9cfc5f737954845a6050543d7c2"
+	ipsw_url = "apple.com/.../UniversalMac_13.5_22G74_Restore.ipsw"
 
 ```
 
 ```hcl
 
-	iso_checksum = "file:ubuntu.org/..../ubuntu-14.04.1-server-amd64.iso.sum"
-	iso_url = "ubuntu.org/.../ubuntu-14.04.1-server-amd64.iso"
+	ipsw_checksum = "file:apple.com/.../UniversalMac_13.5_22G74_Restore.ipsw.sum"
+	ipsw_url = "apple.com/.../UniversalMac_13.5_22G74_Restore.ipsw"
 
 ```
 
 ```hcl
 
-	iso_checksum = "file://./shasums.txt"
-	iso_url = "ubuntu.org/.../ubuntu-14.04.1-server-amd64.iso"
+	ipsw_checksum = "file://./shasums.txt"
+	ipsw_url = "apple.com/.../UniversalMac_13.5_22G74_Restore.ipsw"
 
 ```
 
 ```hcl
 
-	iso_checksum = "file:./shasums.txt",
-	iso_url = "ubuntu.org/.../ubuntu-14.04.1-server-amd64.iso"
+	ipsw_checksum = "file:./shasums.txt",
+	ipsw_url = "apple.com/.../UniversalMac_13.5_22G74_Restore.ipsw"
 
 ```
-
-<!-- End of code generated from the comments of the ISOConfig struct in multistep/commonsteps/iso_config.go; -->
-
 
 ### Required:
 
-<!-- Code generated from the comments of the ISOConfig struct in multistep/commonsteps/iso_config.go; DO NOT EDIT MANUALLY -->
+<!-- Code generated from the comments of the IPSWConfig struct in builder/parallels/ipsw/ipsw_config.go; DO NOT EDIT MANUALLY -->
 
-- `iso_checksum` (string) - The checksum for the ISO file or virtual hard drive file. The type of
+- `ipsw_checksum` (string) - The checksum for the IPSW file or virtual hard drive file. The type of
   the checksum is specified within the checksum field as a prefix, ex:
   "md5:{$checksum}". The type of the checksum can also be omitted and
   Packer will try to infer it based on string length. Valid values are
@@ -159,39 +162,28 @@ In HCL2:
   this is not recommended since these files can be very large and
   corruption does happen from time to time.
 
-- `iso_url` (string) - A URL to the ISO containing the installation image or virtual hard drive
+- `ipsw_url` (string) - A URL to the IPSW containing the installation image or virtual hard drive
   (VHD or VHDX) file to clone.
 
-<!-- End of code generated from the comments of the ISOConfig struct in multistep/commonsteps/iso_config.go; -->
+<!-- End of code generated from the comments of the IPSWConfig struct in builder/parallels/ipsw/ipsw_config.go; -->
 
 
 ### Optional:
 
-<!-- Code generated from the comments of the ISOConfig struct in multistep/commonsteps/iso_config.go; DO NOT EDIT MANUALLY -->
+<!-- Code generated from the comments of the IPSWConfig struct in builder/parallels/ipsw/ipsw_config.go; DO NOT EDIT MANUALLY -->
 
-- `iso_urls` ([]string) - Multiple URLs for the ISO to download. Packer will try these in order.
+- `ipsw_urls` ([]string) - Multiple URLs for the IPSW to download. Packer will try these in order.
   If anything goes wrong attempting to download or while downloading a
   single URL, it will move on to the next. All URLs must point to the same
-  file (same checksum). By default this is empty and `iso_url` is used.
-  Only one of `iso_url` or `iso_urls` can be specified.
+  file (same checksum). By default this is empty and `ipsw_url` is used.
+  Only one of `ipsw_url` or `ipsw_urls` can be specified.
 
-- `iso_target_path` (string) - The path where the iso should be saved after download. By default will
+- `ipsw_target_path` (string) - The path where the ipsw should be saved after download. By default will
   go in the packer cache, with a hash of the original filename and
   checksum as its name.
 
-- `iso_target_extension` (string) - The extension of the iso file after download. This defaults to `iso`.
+<!-- End of code generated from the comments of the IPSWConfig struct in builder/parallels/ipsw/ipsw_config.go; -->
 
-<!-- End of code generated from the comments of the ISOConfig struct in multistep/commonsteps/iso_config.go; -->
-
-
-### Required:
-
-- `parallels_tools_flavor` (string) - The flavor of the Parallels Tools ISO to
-  install into the VM. Valid values are "win", "win-arm", "lin", "lin-arm", "mac", 
-  "mac-arm", "os2" and "other". This can be omitted only if `parallels_tools_mode`
-  is "disable".
-
-### Optional:
 
 - `boot_command` (array of strings) - This is an array of commands to type
   when the virtual machine is first booted. The goal of these commands should
@@ -209,49 +201,6 @@ In HCL2:
 - `cpus` (number) - The number of cpus to use for building the VM.
   Defaults to `1`.
 
-- `disk_size` (number) - The size, in megabytes, of the hard disk to create
-  for the VM. By default, this is 40000 (about 40 GB).
-
-- `disk_type` (string) - The type for image file based virtual disk drives,
-  defaults to `expand`. Valid options are `expand` (expanding disk) that the
-  image file is small initially and grows in size as you add data to it, and
-  `plain` (plain disk) that the image file has a fixed size from the moment it
-  is created (i.e the space is allocated for the full drive). Plain disks
-  perform faster than expanding disks. `skip_compaction` will be set to true
-  automatically for plain disks.
-
-- `floppy_files` (array of strings) - A list of files to place onto a floppy
-  disk that is attached when the VM is booted. This is most useful for
-  unattended Windows installs, which look for an `Autounattend.xml` file on
-  removable media. By default, no floppy will be attached. All files listed in
-  this setting get placed into the root directory of the floppy and the floppy
-  is attached as the first floppy device. Currently, no support exists for
-  creating sub-directories on the floppy. Wildcard characters (\*, ?,
-  and \[\]) are allowed. Directory names are also allowed, which will add all
-  the files found in the directory to the floppy.
-
-- `floppy_dirs` (array of strings) - A list of directories to place onto
-  the floppy disk recursively. This is similar to the `floppy_files` option
-  except that the directory structure is preserved. This is useful for when
-  your floppy disk includes drivers or if you just want to organize it's
-  contents as a hierarchy. Wildcard characters (\*, ?, and \[\]) are allowed.
-
-- `floppy_label` (string) - The label to use for the floppy disk that
-  is attached when the VM is booted. This is most useful for cloud-init,
-  Kickstart or other early initialization tools, which can benefit from labelled floppy disks.
-  By default, the floppy label will be 'packer'.
-
-- `guest_os_type` (string) - The guest OS type being installed. By default
-  this is "other", but you can get _dramatic_ performance improvements by
-  setting this to the proper value. To view all available values for this run
-  `prlctl create x --distribution list`. Setting the correct value hints to
-  Parallels Desktop how to optimize the virtual hardware to work best with
-  that operating system.
-
-- `hard_drive_interface` (string) - The type of controller that the hard
-  drives are attached to, defaults to "sata". Valid options are "sata", "ide",
-  and "scsi".
-
 - `host_interfaces` (array of strings) - A list of which interfaces on the
   host should be searched for a IP address. The first IP address found on one
   of these will be used as `{{ .HTTPIP }}` in the `boot_command`. Defaults to
@@ -267,21 +216,6 @@ In HCL2:
   is executed. This directory must not exist or be empty prior to running
   the builder. By default this is "output-BUILDNAME" where "BUILDNAME" is the
   name of the build.
-
-- `parallels_tools_guest_path` (string) - The path in the virtual machine to
-  upload Parallels Tools. This only takes effect if `parallels_tools_mode`
-  is "upload". This is a [configuration
-  template](/packer/docs/templates/legacy_json_templates/engine) that has a single
-  valid variable: `Flavor`, which will be the value of
-  `parallels_tools_flavor`. By default this is `prl-tools-{{.Flavor}}.iso`
-  which should upload into the login directory of the user.
-
-- `parallels_tools_mode` (string) - The method by which Parallels Tools are
-  made available to the guest for installation. Valid options are "upload",
-  "attach", or "disable". If the mode is "attach" the Parallels Tools ISO will
-  be attached as a CD device to the virtual machine. If the mode is "upload"
-  the Parallels Tools ISO will be uploaded to the path specified by
-  `parallels_tools_guest_path`. The default value is "upload".
 
 - `prlctl` (array of array of strings) - Custom `prlctl` commands to execute
   in order to further customize the virtual machine being created. The value
@@ -315,12 +249,6 @@ In HCL2:
   `shutdown_command` for the virtual machine to actually shut down. If it
   doesn't shut down in this time, it is an error. By default, the timeout is
   "5m", or five minutes.
-
-- `skip_compaction` (boolean) - Virtual disk image is compacted at the end of
-  the build process using `prl_disk_tool` utility (except for the case that
-  `disk_type` is set to `plain`). In certain rare cases, this might corrupt
-  the resulting disk image. If you find this to be the case, you can disable
-  compaction using this configuration value.
 
 - `usb` (boolean) - Specifies whether to enable the USB bus when building
   the VM. Defaults to `false`.
@@ -392,15 +320,16 @@ wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/foo/bar/preseed.cfg
 The `boot_command` configuration is very important: it specifies the keys to
 type when the virtual machine is first booted in order to start the OS
 installer. This command is typed after `boot_wait`, which gives the virtual
-machine some time to actually load the ISO.
+machine some time to actually load the restore image.
 
 As documented above, the `boot_command` is an array of strings. The strings are
 all typed in sequence. It is an array only to improve readability within the
 template.
 
 The boot command is "typed" character for character (using the Parallels
-Virtualization SDK, see [Parallels Builder](/packer/plugin/builder/parallels))
-simulating a human actually typing the keyboard.
+Virtualization SDK, see [Parallels Builder](/packer/plugin/builder/parallels) in Parallels Desktop version
+18 or before, or using the 'prlctl send-key-event from Parallels Desktop
+version 19') simulating a human actually typing the keyboard.
 
 There are a set of special keys available. If these are in your boot
 command, they will be replaced by the proper key:
@@ -470,24 +399,6 @@ available variables are:
 
 For more examples of various boot commands, see the sample projects from our
 [community templates page](/community-tools#templates).
-
-
-Example boot command. This is actually a working boot command used to start an
-Ubuntu 12.04 installer:
-
-```text
-[
-  "<esc><esc><enter><wait>",
-  "/install/vmlinuz noapic ",
-  "preseed/url=http://{{ .HTTPIP }}:{{ .HTTPPort }}/preseed.cfg ",
-  "debian-installer=en_US auto locale=en_US kbd-chooser/method=us ",
-  "hostname={{ .Name }} ",
-  "fb=false debconf/frontend=noninteractive ",
-  "keyboard-configuration/modelcode=SKIP keyboard-configuration/layout=USA ",
-  "keyboard-configuration/variant=USA console-setup/ask_detect=false ",
-  "initrd=/install/initrd.gz -- <enter>;"
-]
-```
 
 For more examples of various boot commands, see the sample projects from our
 [community templates page](/community-tools#templates).
