@@ -3,7 +3,7 @@
 integration {
   name = "Parallels"
   description = "TODO"
-  identifier = "packer/BrandonRomano/parallels"
+  identifier = "packer/Parallels/parallels"
   component {
     type = "builder"
     name = "Parallels PVM"

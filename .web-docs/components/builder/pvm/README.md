@@ -178,7 +178,7 @@ all typed in sequence. It is an array only to improve readability within the
 template.
 
 The boot command is "typed" character for character (using the Parallels
-Virtualization SDK, see [Parallels Builder](/packer/integrations/BrandonRomano/parallels))
+Virtualization SDK, see [Parallels Builder](/packer/integrations/Parallels/parallels))
 simulating a human actually typing the keyboard.
 
 There are a set of special keys available. If these are in your boot
