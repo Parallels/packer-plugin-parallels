@@ -2,7 +2,7 @@
 # https://github.com/hashicorp/integration-template#metadata-configuration
 integration {
   name = "Parallels"
-  description = "TODO"
+  description = "The Parallels plugin can be used with HashiCorp Packer to create custom images on Parallels."
   identifier = "packer/Parallels/parallels"
   component {
     type = "builder"
