@@ -14,4 +14,14 @@ integration {
     name = "Parallels ISO"
     slug = "iso"
   }
+  component {
+    type = "builder"
+    name = "Parallels IPSW"
+    slug = "ipsw"
+  }
+  component {
+    type = "builder"
+    name = "Parallels MACVM"
+    slug = "macvm"
+  }
 }
