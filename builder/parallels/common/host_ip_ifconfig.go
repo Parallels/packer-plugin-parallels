@@ -55,5 +55,10 @@ func (f *IfconfigIPFinder) HostIP() (string, error) {
 			}
 		}
 	}
-	return "", errors.New("IP not found in ifconfig output, check the host_interfaces config to ensure your device is listed")
+
+	devices_checked_list := ""
+	for _, device := range f.Devices {
+		devices_checked_list += device + " "
+	}
+	return "", errors.New("IP not found in ifconfig output, check the host_interfaces config to ensure your device is listed. Devices checked: " + devices_checked_list)
 }
