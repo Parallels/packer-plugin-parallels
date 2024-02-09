@@ -461,15 +461,12 @@ func (d *Parallels9Driver) MAC(vmName string) (string, error) {
 	return mac, nil
 }
 
-// IPAddress finds the IP address of a VM connected that uses DHCP by its MAC address
-//
 // Parses the file /Library/Preferences/Parallels/parallels_dhcp_leases
 // file contain a list of DHCP leases given by Parallels Desktop
 // Example line:
 // 10.211.55.181="1418921112,1800,001c42f593fb,ff42f593fb000100011c25b9ff001c42f593fb"
 // IP Address   ="Lease expiry, Lease time, MAC, MAC or DUID"
-func (d *Parallels9Driver) IPAddress(mac string, vmName string) (string, error) {
-
+func (d *Parallels9Driver) ipWithLeases(mac string, vmName string) (string, error) {
 	if len(mac) != 12 {
 		return "", fmt.Errorf("Not a valid MAC address: %s. It should be exactly 12 digits.", mac)
 	}
@@ -493,34 +490,52 @@ func (d *Parallels9Driver) IPAddress(mac string, vmName string) (string, error) 
 		}
 	}
 
-	if len(mostRecentIP) == 0 {
+	return mostRecentIP, nil
+}
+
+func (d *Parallels9Driver) ipWithPrlctl(vmName string) (string, error) {
+	ip := ""
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command(d.PrlctlPath, "list", vmName, "--full", "--no-header", "-o", "ip_configured")
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		log.Printf("Command run failed for Virtual Machine: %s\n", vmName)
+		return "", err
+	}
+
+	stderrString := strings.TrimSpace(stderr.String())
+	if len(stderrString) > 0 {
+		log.Printf("stderr: %s", stderrString)
+	}
+
+	stdoutString := strings.TrimSpace(stdout.String())
+	re := regexp.MustCompile(`([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)`)
+	macMatch := re.FindAllStringSubmatch(stdoutString, 1)
+
+	if len(macMatch) != 1 {
+		return "", fmt.Errorf("Unable to retrieve ip address of VM %s through tools\n", vmName)
+	}
+
+	ip = macMatch[0][1]
+	return ip, nil
+}
+
+// IPAddress finds the IP address of a VM connected that uses DHCP by its MAC address
+// If the MAC address is not found in the DHCP lease file, it will try to find ip using prlctl
+func (d *Parallels9Driver) IPAddress(mac string, vmName string) (string, error) {
+	ip, err := d.ipWithLeases(mac, vmName)
+	if (err != nil) || (len(ip) == 0) {
 		log.Printf("IP lease not found for MAC address %s in: %s\n", mac, d.dhcpLeaseFile)
 
-		var stdout bytes.Buffer
-		cmd := exec.Command(d.PrlctlPath, "list", vmName, "--full", "--no-header", "-o", "ip_configured")
-		cmd.Stdout = &stdout
-		if err := cmd.Run(); err != nil {
-			log.Printf("Command run failed for Virtual Machine: %s\n", vmName)
-			return "", err
+		ip, err = d.ipWithPrlctl(vmName)
+		if (err != nil) || (len(ip) == 0) {
+			return "", fmt.Errorf("IP address not found for this VM using prlctl: %s\n", vmName)
 		}
-
-		stdoutString := strings.TrimSpace(stdout.String())
-		re := regexp.MustCompile(`([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)`)
-		macMatch := re.FindAllStringSubmatch(stdoutString, 1)
-
-		if len(macMatch) != 1 {
-			return "", fmt.Errorf("Unable to retrieve ip address of VM %s through tools\n", vmName)
-		}
-
-		mostRecentIP = macMatch[0][1]
 	}
 
-	if len(mostRecentIP) == 0 {
-		return "", fmt.Errorf("IP address not found for this VM: %s\n", vmName)
-	}
-
-	log.Printf("Found IP lease: %s for MAC address %s\n", mostRecentIP, mac)
-	return mostRecentIP, nil
+	log.Printf("Found IP lease: %s for MAC address %s\n", ip, mac)
+	return ip, nil
 }
 
 // ToolsISOPath returns a full path to the Parallels Tools ISO for the specified guest
