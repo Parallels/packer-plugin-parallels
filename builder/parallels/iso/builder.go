@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	parallelscommon "github.com/Parallels/packer-plugin-parallels/builder/parallels/common"
 	"github.com/hashicorp/hcl/v2/hcldec"
@@ -32,6 +33,8 @@ type Builder struct {
 }
 
 type Config struct {
+	APIEndpoint                         string `mapstructure:"api_endpoint"`
+	SourceImageList                     string `mapstructure:"source_image_list"`
 	common.PackerConfig                 `mapstructure:",squash"`
 	commonsteps.HTTPConfig              `mapstructure:",squash"`
 	commonsteps.ISOConfig               `mapstructure:",squash"`
@@ -292,5 +295,9 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 	}
 
 	generatedData := map[string]interface{}{"generated_data": state.Get("generated_data")}
-	return parallelscommon.NewArtifact(b.config.OutputDir, generatedData)
+	log.Printf("generatedData: %v", generatedData)
+	log.Printf("b.config.OutputDir: %v", b.config.OutputDir)
+	log.Printf("b.config.APIEndpoint: %v", b.config.APIEndpoint)
+	log.Printf("b.config.SourceImageList: %v", b.config.SourceImageList)
+	return parallelscommon.NewArtifact(b.config.OutputDir, generatedData, b.config.APIEndpoint, b.config.SourceImageList)
 }
