@@ -310,6 +310,12 @@ func (d *Parallels9Driver) Stop(name string) error {
 
 // Prlctl executes the specified "prlctl" command.
 func (d *Parallels9Driver) Prlctl(args ...string) error {
+	_, err := d.PrlctlGet(args...)
+	return err
+}
+
+// PrlctlGet executes the given "prlctl" command and returns the output
+func (d *Parallels9Driver) PrlctlGet(args ...string) (string, error) {
 	var stdout, stderr bytes.Buffer
 
 	log.Printf("Executing prlctl: %#v", args)
@@ -328,7 +334,7 @@ func (d *Parallels9Driver) Prlctl(args ...string) error {
 	log.Printf("stdout: %s", stdoutString)
 	log.Printf("stderr: %s", stderrString)
 
-	return err
+	return stdoutString, err
 }
 
 // Verify raises an error if the builder could not be used on that host machine.

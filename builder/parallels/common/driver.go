@@ -44,6 +44,9 @@ type Driver interface {
 	// Prlctl executes the given Prlctl command
 	Prlctl(...string) error
 
+	// PrlctlGet executes the given Prlctl command and returns the output
+	PrlctlGet(...string) (string, error)
+
 	// Get the path to the Parallels Tools ISO for the given flavor.
 	ToolsISOPath(string) (string, error)
 
