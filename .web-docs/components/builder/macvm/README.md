@@ -67,6 +67,14 @@ communicator is "ssh".
 
 <!-- Code generated from the comments of the Config struct in builder/parallels/macvm/config.go; DO NOT EDIT MANUALLY -->
 
+- `screen_configs` ([]parallelscommon.SingleScreenBootConfig) - Screens and it's boot configs
+  A screen is considered matched if all the matching strings are present in the screen.
+  The first matching screen will be considered & boot config of that screen will be used.
+  If matching strings are empty, then it is considered as empty screen,
+  which will be considered when none of the other screens are matched (You can use this screen to -
+  make system wait for some time / execute a common boot command etc.).
+  If more than one empty screen is found, then it is considered as an error.
+
 - `vm_name` (string) - This is the name of the MACVM directory for the new
   virtual machine, without the file extension. By default this is
   "packer-BUILDNAME", where "BUILDNAME" is the name of the build.
