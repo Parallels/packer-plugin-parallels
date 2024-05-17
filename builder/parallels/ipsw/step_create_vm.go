@@ -37,6 +37,7 @@ func (s *stepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		"-o", "macos",
 		"--restore-image", ipswPath,
 		"--dst", config.OutputDir,
+		"--no-hdd",
 	}
 	commands[1] = []string{
 		"set", name,

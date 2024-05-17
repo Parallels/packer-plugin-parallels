@@ -44,6 +44,7 @@ source "parallels-ipsw" "macvm_automated" {
   vm_name              = "macOS"
   cpus                 = "4"
   memory               = "8192"
+  disk_size            = "50000"
 }
 
 build {
@@ -173,6 +174,9 @@ In HCL2:
 
 - `cpus` (number) - The number of cpus to use for building the VM.
   Defaults to `1`.
+
+- `disk_size` (number) - The size, in megabytes, of the hard disk to create
+  for the VM. By default, this is 40000 (about 40 GB).
 
 - `host_interfaces` (array of strings) - A list of which interfaces on the
   host should be searched for a IP address. The first IP address found on one
