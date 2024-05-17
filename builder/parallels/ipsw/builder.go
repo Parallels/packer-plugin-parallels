@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	parallelscommon "github.com/Parallels/packer-plugin-parallels/builder/parallels/common"
 	"github.com/hashicorp/hcl/v2/hcldec"
@@ -42,6 +43,15 @@ type Config struct {
 	parallelscommon.PrlctlVersionConfig `mapstructure:",squash"`
 	shutdowncommand.ShutdownConfig      `mapstructure:",squash"`
 	parallelscommon.SSHConfig           `mapstructure:",squash"`
+
+	// Screens and it's boot configs
+	// A screen is considered matched if all the matching strings are present in the screen.
+	// The first matching screen will be considered & boot config of that screen will be used.
+	// If matching strings are empty, then it is considered as empty screen,
+	// which will be considered when none of the other screens are matched (You can use this screen to -
+	// make system wait for some time / execute a common boot command etc.).
+	// If more than one empty screen is found, then it is considered as an error.
+	ScreenConfigs []parallelscommon.SingleScreenBootConfig `mapstructure:"screen_configs" required:"false"`
 	// IPSWConfig is the configuration for the IPSW file
 	IPSWConfig IPSWConfig `mapstructure:",squash"`
 	// The size, in megabytes, of the hard disk to create
@@ -120,6 +130,21 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
 				"will forcibly halt the virtual machine, which may result in data loss.")
 	}
 
+	fmt.Fprintln(os.Stderr, "Screen count is : ", len(b.config.ScreenConfigs))
+
+	emptyScreenCount := 0
+	for _, screenConfig := range b.config.ScreenConfigs {
+		errs = packersdk.MultiErrorAppend(errs, screenConfig.Prepare(&b.config.ctx)...)
+		if len(screenConfig.MatchingStrings) == 0 {
+			emptyScreenCount++
+		}
+	}
+
+	if emptyScreenCount > 1 {
+		packersdk.MultiErrorAppend(errs, fmt.Errorf("more than one empty screen config found."+
+			"only one empty screen config is allowed"))
+	}
+
 	if errs != nil && len(errs.Errors) > 0 {
 		return nil, warnings, errs
 	}
@@ -157,6 +182,11 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			VMName:         b.config.VMName,
 			Ctx:            b.config.ctx,
 			GroupInterval:  b.config.BootConfig.BootGroupInterval,
+		},
+		&parallelscommon.StepScreenBasedBoot{
+			ScreenConfigs: b.config.ScreenConfigs,
+			VmName:        b.config.VMName,
+			Ctx:           b.config.ctx,
 		},
 		&communicator.StepConnect{
 			Config:    &b.config.SSHConfig.Comm,

@@ -1,5 +1,13 @@
 <!-- Code generated from the comments of the Config struct in builder/parallels/ipsw/builder.go; DO NOT EDIT MANUALLY -->
 
+- `screen_configs` ([]parallelscommon.SingleScreenBootConfig) - Screens and it's boot configs
+  A screen is considered matched if all the matching strings are present in the screen.
+  The first matching screen will be considered & boot config of that screen will be used.
+  If matching strings are empty, then it is considered as empty screen,
+  which will be considered when none of the other screens are matched (You can use this screen to -
+  make system wait for some time / execute a common boot command etc.).
+  If more than one empty screen is found, then it is considered as an error.
+
 - `disk_size` (uint) - The size, in megabytes, of the hard disk to create
   for the VM. By default, this is 40000 (about 40 GB).
 
