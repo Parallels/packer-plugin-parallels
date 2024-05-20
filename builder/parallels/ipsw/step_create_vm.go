@@ -65,6 +65,17 @@ func (s *stepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		return multistep.ActionHalt
 	}
 
+	// Temporary workaround
+	// Currently it is not possible to retrieve window ID of the MacOS VM when it is in headless mode
+	// So, we are setting the VM to window mode after setting the default configuration
+	command := []string{"set", name, "--startup-view", "window"}
+	if err := driver.Prlctl(command...); err != nil {
+		err := fmt.Errorf("Error setting VM to window mode: %s", err)
+		state.Put("error", err)
+		ui.Error(err.Error())
+		return multistep.ActionHalt
+	}
+
 	// Set the VM name property on the first command
 	if s.vmName == "" {
 		s.vmName = name
