@@ -150,6 +150,10 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		},
 		commonsteps.HTTPServerFromHTTPConfig(&b.config.HTTPConfig),
 		new(stepCreateVM),
+		&parallelscommon.StepPrlctl{
+			Commands: b.config.Prlctl,
+			Ctx:      b.config.ctx,
+		},
 		&parallelscommon.StepRun{},
 		&parallelscommon.StepTypeBootCommand{
 			BootWait:       b.config.BootWait,
