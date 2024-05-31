@@ -21,7 +21,7 @@ import (
 // This step creates the virtual disk that will be used as the
 // hard drive for the virtual machine.
 type StepScreenBasedBoot struct {
-	ScreenConfigs []SingleScreenBootConfig
+	ScreenConfigs []BootScreenConfig
 	VmName        string
 	Ctx           interpolate.Context
 }
@@ -41,9 +41,9 @@ func (s *StepScreenBasedBoot) executeBinary(binaryPath string, args ...string) (
 	return result, nil
 }
 
-func (s *StepScreenBasedBoot) detectScreen(text string) SingleScreenBootConfig {
+func (s *StepScreenBasedBoot) detectScreen(text string) BootScreenConfig {
 	text = strings.ToLower(text)
-	emptyBootConfig := SingleScreenBootConfig{}
+	emptyBootConfig := BootScreenConfig{}
 
 	for _, screenConfig := range s.ScreenConfigs {
 		// Empty screens are not considered for matching
@@ -94,7 +94,7 @@ func (s *StepScreenBasedBoot) executeBootCommand(bootConfig bootcommand.BootConf
 }
 
 func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {
-	//We don't have any screen configs, so no wasting of time here.
+	// We don't have any screen configs, so no wasting of time here.
 	if (s.ScreenConfigs == nil) || (len(s.ScreenConfigs) == 0) {
 		return multistep.ActionContinue
 	}

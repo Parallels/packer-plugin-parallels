@@ -7,9 +7,9 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-// FlatSingleScreenBootConfig is an auto-generated flat version of SingleScreenBootConfig.
+// FlatBootScreenConfig is an auto-generated flat version of BootScreenConfig.
 // Where the contents of a field with a `mapstructure:,squash` tag are bubbled up.
-type FlatSingleScreenBootConfig struct {
+type FlatBootScreenConfig struct {
 	BootGroupInterval *string  `mapstructure:"boot_keygroup_interval" cty:"boot_keygroup_interval" hcl:"boot_keygroup_interval"`
 	BootWait          *string  `mapstructure:"boot_wait" cty:"boot_wait" hcl:"boot_wait"`
 	BootCommand       []string `mapstructure:"boot_command" cty:"boot_command" hcl:"boot_command"`
@@ -18,17 +18,17 @@ type FlatSingleScreenBootConfig struct {
 	IsLastScreen      *bool    `mapstructure:"is_last_screen" cty:"is_last_screen" hcl:"is_last_screen"`
 }
 
-// FlatMapstructure returns a new FlatSingleScreenBootConfig.
-// FlatSingleScreenBootConfig is an auto-generated flat version of SingleScreenBootConfig.
+// FlatMapstructure returns a new FlatBootScreenConfig.
+// FlatBootScreenConfig is an auto-generated flat version of BootScreenConfig.
 // Where the contents a fields with a `mapstructure:,squash` tag are bubbled up.
-func (*SingleScreenBootConfig) FlatMapstructure() interface{ HCL2Spec() map[string]hcldec.Spec } {
-	return new(FlatSingleScreenBootConfig)
+func (*BootScreenConfig) FlatMapstructure() interface{ HCL2Spec() map[string]hcldec.Spec } {
+	return new(FlatBootScreenConfig)
 }
 
-// HCL2Spec returns the hcl spec of a SingleScreenBootConfig.
-// This spec is used by HCL to read the fields of SingleScreenBootConfig.
-// The decoded values from this spec will then be applied to a FlatSingleScreenBootConfig.
-func (*FlatSingleScreenBootConfig) HCL2Spec() map[string]hcldec.Spec {
+// HCL2Spec returns the hcl spec of a BootScreenConfig.
+// This spec is used by HCL to read the fields of BootScreenConfig.
+// The decoded values from this spec will then be applied to a FlatBootScreenConfig.
+func (*FlatBootScreenConfig) HCL2Spec() map[string]hcldec.Spec {
 	s := map[string]hcldec.Spec{
 		"boot_keygroup_interval": &hcldec.AttrSpec{Name: "boot_keygroup_interval", Type: cty.String, Required: false},
 		"boot_wait":              &hcldec.AttrSpec{Name: "boot_wait", Type: cty.String, Required: false},

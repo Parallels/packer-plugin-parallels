@@ -67,7 +67,7 @@ communicator is "ssh".
 
 <!-- Code generated from the comments of the Config struct in builder/parallels/macvm/config.go; DO NOT EDIT MANUALLY -->
 
-- `screen_configs` ([]parallelscommon.SingleScreenBootConfig) - Screens and it's boot configs
+- `boot_screen_config` (parallelscommon.BootScreensConfig) - Screens and it's boot configs
   A screen is considered matched if all the matching strings are present in the screen.
   The first matching screen will be considered & boot config of that screen will be used.
   If matching strings are empty, then it is considered as empty screen,

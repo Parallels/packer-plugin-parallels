@@ -51,7 +51,7 @@ type Config struct {
 	// which will be considered when none of the other screens are matched (You can use this screen to -
 	// make system wait for some time / execute a common boot command etc.).
 	// If more than one empty screen is found, then it is considered as an error.
-	ScreenConfigs []parallelscommon.SingleScreenBootConfig `mapstructure:"screen_configs" required:"false"`
+	BootScreenConfig parallelscommon.BootScreensConfig `mapstructure:"boot_screen_config" required:"false"`
 	// IPSWConfig is the configuration for the IPSW file
 	IPSWConfig IPSWConfig `mapstructure:",squash"`
 	// The size, in megabytes, of the hard disk to create
@@ -115,8 +115,10 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
 	}
 
 	if len(b.config.HostInterfaces) == 0 {
-		b.config.HostInterfaces = []string{"en0", "en1", "en2", "en3", "en4", "en5", "en6", "en7",
-			"en8", "en9", "ppp0", "ppp1", "ppp2"}
+		b.config.HostInterfaces = []string{
+			"en0", "en1", "en2", "en3", "en4", "en5", "en6", "en7",
+			"en8", "en9", "ppp0", "ppp1", "ppp2",
+		}
 	}
 
 	if b.config.VMName == "" {
@@ -130,10 +132,10 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
 				"will forcibly halt the virtual machine, which may result in data loss.")
 	}
 
-	fmt.Fprintln(os.Stderr, "Screen count is : ", len(b.config.ScreenConfigs))
+	fmt.Fprintln(os.Stderr, "Screen count is : ", len(b.config.BootScreenConfig))
 
 	emptyScreenCount := 0
-	for _, screenConfig := range b.config.ScreenConfigs {
+	for _, screenConfig := range b.config.BootScreenConfig {
 		errs = packersdk.MultiErrorAppend(errs, screenConfig.Prepare(&b.config.ctx)...)
 		if len(screenConfig.MatchingStrings) == 0 {
 			emptyScreenCount++
@@ -184,7 +186,7 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			GroupInterval:  b.config.BootConfig.BootGroupInterval,
 		},
 		&parallelscommon.StepScreenBasedBoot{
-			ScreenConfigs: b.config.ScreenConfigs,
+			ScreenConfigs: b.config.BootScreenConfig,
 			VmName:        b.config.VMName,
 			Ctx:           b.config.ctx,
 		},
@@ -195,7 +197,7 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		},
 	}
 
-	//Add post-communitcation steps
+	// Add post-communitcation steps
 	if b.config.SSHConfig.Comm.Type != "none" {
 		steps = append(steps, []multistep.Step{
 			&parallelscommon.StepUploadVersion{

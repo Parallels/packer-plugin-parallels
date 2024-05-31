@@ -78,7 +78,7 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			GroupInterval:  b.config.BootConfig.BootGroupInterval,
 		},
 		&parallelscommon.StepScreenBasedBoot{
-			ScreenConfigs: b.config.ScreenConfigs,
+			ScreenConfigs: b.config.BootScreenConfig,
 			VmName:        b.config.VMName,
 			Ctx:           b.config.ctx,
 		},

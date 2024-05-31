@@ -1,10 +1,14 @@
 NAME=parallels
 BINARY=packer-plugin-${NAME}
-PLUGIN_FQN="$(shell grep -E '^module' <go.mod | sed -E 's/module *//')"
+OS=$(uname go env GOOS)
+PLUGIN_FQN=$(shell grep -E '^module' <go.mod | sed -E 's/module *//')
 
 COUNT?=1
 TEST?=$(shell go list ./...)
 HASHICORP_PACKER_PLUGIN_SDK_VERSION?=$(shell go list -m github.com/hashicorp/packer-plugin-sdk | cut -d " " -f2)
+PLUGIN_PATH=$(shell echo "${PLUGIN_FQN}" | sed 's/packer-plugin-//')
+PACKER_FOLDER=$(shell dirname $(shell which packer))
+VERSION=$(shell grep -E '^\tVersion = ' <./version/version.go | sed -E 's/\tVersion = *//')
 
 .PHONY: dev
 
@@ -12,14 +16,13 @@ build:
 	@go build -o ${BINARY}
 
 dev:
-	@go build -ldflags="-X '${PLUGIN_FQN}/version.VersionPrerelease=dev'" -o '${BINARY}'
-	packer plugins install --path ${BINARY} "$(shell echo "${PLUGIN_FQN}" | sed 's/packer-plugin-//')"
+	@./scripts/build_debug.sh
 
 test:
 	@go test -race -count $(COUNT) $(TEST) -timeout=3m
 
 install-packer-sdc: ## Install packer sofware development command
-	@go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@${HASHICORP_PACKER_PLUGIN_SDK_VERSION}
+	go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@${HASHICORP_PACKER_PLUGIN_SDK_VERSION}
 
 plugin-check: install-packer-sdc build
 	@packer-sdc plugin-check ${BINARY}
