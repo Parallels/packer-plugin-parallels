@@ -145,7 +145,7 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
 	}
 
 	if emptyScreenCount > 1 {
-		packersdk.MultiErrorAppend(errs, fmt.Errorf("more than one empty screen config found."+
+		errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("more than one empty screen config found."+
 			"only one empty screen config is allowed"))
 	}
 

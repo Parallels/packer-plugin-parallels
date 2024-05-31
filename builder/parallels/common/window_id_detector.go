@@ -89,17 +89,60 @@ func (s *WindowIDDetector) getVMProcessID(uuid string) (int, error) {
 	c4.Stdout = &buf
 
 	// Start the commands
-	c1.Start()
-	c2.Start()
-	c3.Start()
-	c4.Start()
-	c1.Wait()
-	w1.Close()
-	c2.Wait()
-	w2.Close()
-	c3.Wait()
-	w3.Close()
-	c4.Wait()
+	err := c1.Start()
+	if err != nil {
+		return 0, err
+	}
+
+	err = c2.Start()
+	if err != nil {
+		return 0, err
+	}
+
+	err = c3.Start()
+	if err != nil {
+		return 0, err
+	}
+
+	err = c4.Start()
+	if err != nil {
+		return 0, err
+	}
+
+	err = c1.Wait()
+	if err != nil {
+		return 0, err
+	}
+
+	err = w1.Close()
+	if err != nil {
+		return 0, err
+	}
+
+	err = c2.Wait()
+	if err != nil {
+		return 0, err
+	}
+
+	err = w2.Close()
+	if err != nil {
+		return 0, err
+	}
+
+	err = c3.Wait()
+	if err != nil {
+		return 0, err
+	}
+
+	err = w3.Close()
+	if err != nil {
+		return 0, err
+	}
+
+	err = c4.Wait()
+	if err != nil {
+		return 0, err
+	}
 
 	// Capture the output
 	output, err := buf.ReadString('\n')
@@ -108,7 +151,7 @@ func (s *WindowIDDetector) getVMProcessID(uuid string) (int, error) {
 	}
 
 	// Convert output to int and return
-	return strconv.Atoi(strings.TrimSpace(string(output)))
+	return strconv.Atoi(strings.TrimSpace(output))
 }
 
 // DetectWindowId is a method that detects the window ID of a given VM.
