@@ -61,6 +61,7 @@ type Config struct {
 	// host should be searched for a IP address. The first IP address found on one
 	// of these will be used as `{{ .HTTPIP }}` in the boot_command. Defaults to
 	// ["en0", "en1", "en2", "en3", "en4", "en5", "en6", "en7", "en8", "en9",
+	// "en10", "en11", "en12", "en13", "en14", "en15", "en16", "en17", "en18", "en19", "en20",
 	// "ppp0", "ppp1", "ppp2"].
 	HostInterfaces []string `mapstructure:"host_interfaces" required:"false"`
 	// This is the name of the PVM directory for the new
@@ -176,6 +177,10 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		},
 		commonsteps.HTTPServerFromHTTPConfig(&b.config.HTTPConfig),
 		new(stepCreateVM),
+		&parallelscommon.StepPrlctl{
+			Commands: b.config.Prlctl,
+			Ctx:      b.config.ctx,
+		},
 		&parallelscommon.StepRun{},
 		&parallelscommon.StepTypeBootCommand{
 			BootWait:       b.config.BootWait,

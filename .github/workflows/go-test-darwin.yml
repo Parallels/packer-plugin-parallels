@@ -41,6 +41,6 @@ jobs:
           go-version: ${{ needs.get-go-version.outputs.go-version }}
       - run: |
           echo "Testing with Go ${{ needs.get-go-version.outputs.go-version }}"
-          go test -race -count 1 ./... -timeout=3m
+          CGO_ENABLED=1 CC=clang go test -race -count 1 ./... -timeout=3m
 
 
