@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -112,14 +113,30 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 	windowIDOption := "-l" + fmt.Sprint(windowId)
 	// Path to the binary you want to execute
 	binaryPath := "/usr/sbin/screencapture"
+	// Create a temporary file to store the screenshot
+	file, err := os.CreateTemp("", "screenshot*.png")
+	if err != nil {
+		log.Println("Error creating temporary file:", err)
+		return multistep.ActionHalt
+	}
+
+	file.Close()
+	defer os.Remove(file.Name())
 	// Command-line arguments to pass to the binary
-	args := []string{"-x", windowIDOption, "./screenshot.png"}
+	args := []string{"-x", windowIDOption, file.Name()}
 
 	ui.Say("Starting screen based boot...")
-	ticker := time.NewTicker(1 * time.Second)
+
+	prevTime := time.Now()
+	minDelay := 1 * time.Second
 	lastScreenName := ""
-	for range ticker.C {
+	for {
 		log.Println("Checking screen...")
+		// Check if the minimum delay has passed
+		if time.Since(prevTime) < minDelay {
+			time.Sleep(minDelay - time.Since(prevTime))
+		}
+		prevTime = time.Now()
 
 		// Capturing the screenshot
 		_, err := s.executeBinary(binaryPath, args...)
@@ -130,7 +147,7 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 
 		// Use OCR to detect the text in the screenshot
 		visionOCR := VisionOCR{}
-		text, err := visionOCR.RecognizeText("./screenshot.png")
+		text, err := visionOCR.RecognizeText(file.Name())
 		if err != nil {
 			fmt.Println("Error:", err)
 			return multistep.ActionHalt
