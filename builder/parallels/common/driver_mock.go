@@ -154,3 +154,7 @@ func (d *DriverMock) ToolsISOPath(flavor string) (string, error) {
 	d.ToolsISOPathFlavor = flavor
 	return d.ToolsISOPathResult, d.ToolsISOPathErr
 }
+
+func (d *DriverMock) PrlctlGet(...string) (string, error) {
+	return "", nil
+}
