@@ -62,6 +62,7 @@ type Config struct {
 	// of these will be used as `{{ .HTTPIP }}` in the boot_command. Defaults to
 	// ["en0", "en1", "en2", "en3", "en4", "en5", "en6", "en7", "en8", "en9",
 	// "en10", "en11", "en12", "en13", "en14", "en15", "en16", "en17", "en18", "en19", "en20",
+	// "en10", "en11", "en12", "en13", "en14", "en15", "en16", "en17", "en18", "en19", "en20",
 	// "ppp0", "ppp1", "ppp2"].
 	HostInterfaces []string `mapstructure:"host_interfaces" required:"false"`
 	// This is the name of the PVM directory for the new
