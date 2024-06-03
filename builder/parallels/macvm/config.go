@@ -38,6 +38,13 @@ type Config struct {
 	// make system wait for some time / execute a common boot command etc.).
 	// If more than one empty screen is found, then it is considered as an error.
 	BootScreenConfig parallelscommon.BootScreensConfig `mapstructure:"boot_screen_config" required:"false"`
+	// OCR library to use. Two options are currently supported: "tesseract" and "vision".
+	// "tesseract" uses the Tesseract OCR library to recognize text. A manual installation of -
+	// Tesseract is required for this to work.
+	// "vision" uses the Apple Vision library to recognize text, which is included in macOS. It might -
+	// cause problems in macOS 13 or older VMs.
+	// Defaults to "vision".
+	OCRLibrary string `mapstructure:"ocr_library" required:"false"`
 	// The path to a MACVM directory that acts as the source
 	// of this build.
 	SourcePath string `mapstructure:"source_path" required:"true"`
@@ -98,6 +105,12 @@ func (c *Config) Prepare(raws ...interface{}) ([]string, error) {
 	if emptyScreenCount > 1 {
 		errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("more than one empty screen config found."+
 			"only one empty screen config is allowed"))
+	}
+
+	if c.OCRLibrary == "" {
+		c.OCRLibrary = "vision"
+	} else if c.OCRLibrary != "tesseract" && c.OCRLibrary != "vision" {
+		errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("invalid ocr_library: %s", c.OCRLibrary))
 	}
 
 	if c.SourcePath == "" {

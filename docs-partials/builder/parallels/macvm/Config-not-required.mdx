@@ -8,6 +8,13 @@
   make system wait for some time / execute a common boot command etc.).
   If more than one empty screen is found, then it is considered as an error.
 
+- `ocr_library` (string) - OCR library to use. Two options are currently supported: "tesseract" and "vision".
+  "tesseract" uses the Tesseract OCR library to recognize text. A manual installation of -
+  Tesseract is required for this to work.
+  "vision" uses the Apple Vision library to recognize text, which is included in macOS. It might -
+  cause problems in macOS 13 or older VMs.
+  Defaults to "vision".
+
 - `vm_name` (string) - This is the name of the MACVM directory for the new
   virtual machine, without the file extension. By default this is
   "packer-BUILDNAME", where "BUILDNAME" is the name of the build.

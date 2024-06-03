@@ -8,6 +8,13 @@
   make system wait for some time / execute a common boot command etc.).
   If more than one empty screen is found, then it is considered as an error.
 
+- `ocr_library` (string) - OCR library to use. Two options are currently supported: "tesseract" and "vision".
+  "tesseract" uses the Tesseract OCR library to recognize text. A manual installation of -
+  Tesseract is required for this to work.
+  "vision" uses the Apple Vision library to recognize text, which is included in macOS. It might -
+  cause problems in macOS 13 or older VMs.
+  Defaults to "vision".
+
 - `disk_size` (uint) - The size, in megabytes, of the hard disk to create
   for the VM. By default, this is 40000 (about 40 GB).
 

@@ -79,6 +79,7 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		},
 		&parallelscommon.StepScreenBasedBoot{
 			ScreenConfigs: b.config.BootScreenConfig,
+			OCRLibrary:    b.config.OCRLibrary,
 			VmName:        b.config.VMName,
 			Ctx:           b.config.ctx,
 		},

@@ -70,16 +70,50 @@ bool detectTextFromImage(const char *imagePath, char** detectedText, char **erro
 }
 */
 import "C"
+
 import (
 	"errors"
+	"os/exec"
+	"strings"
 	"unsafe"
 )
 
-// VisionOCR is a struct that acts as an Adapter to Apple's Vision Framework for Optical Character Recognition.
-type VisionOCR struct {
+func (c *OCRRunner) executeBinary(binaryPath string, args ...string) (string, error) {
+	// Run the binary with the specified path and arguments
+	cmd := exec.Command(binaryPath, args...)
+
+	// Capture the output
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	// Convert output to string and return
+	result := string(output)
+	return result, nil
 }
 
-func (c *VisionOCR) detectTextFromImage(imagePath string, text chan<- string, err chan<- error) {
+// OCRRunner is a struct that acts as an Adapter to Apple's Vision Framework for Optical Character Recognition.
+type OCRRunner struct {
+}
+
+func (c *OCRRunner) detectTextFromImageUsingTesseract(imagePath string) (string, error) {
+	tesseractPath, err := exec.LookPath("tesseract")
+	if err != nil {
+		return "", errors.New("tesseract binary not found in PATH. Please install tesseract.")
+	}
+
+	// Execute binary 'tesseract imagePath stdout' to extract text from image
+	detectedText, execErr := c.executeBinary(tesseractPath, imagePath, "stdout")
+	if execErr != nil {
+		return "", execErr
+	}
+
+	detectedText = strings.ReplaceAll(detectedText, "\n", " ")
+	return detectedText, nil
+}
+
+func (c *OCRRunner) detectTextFromImageUsingVisionAPI(imagePath string, text chan<- string, err chan<- error) {
 	detectedText := C.CString("")
 	defer C.free(unsafe.Pointer(detectedText))
 	errorBuffer := C.CString("")
@@ -97,9 +131,19 @@ func (c *VisionOCR) detectTextFromImage(imagePath string, text chan<- string, er
 }
 
 // Extracts text from the image at the given path. Uses "Accurate" recognition level.
-func (c *VisionOCR) RecognizeText(imagePath string) (text string, err error) {
-	chanText := make(chan string)
-	chanErr := make(chan error)
-	go c.detectTextFromImage(imagePath, chanText, chanErr)
-	return <-chanText, <-chanErr
+func (c *OCRRunner) RecognizeText(imagePath string, library string) (text string, err error) {
+	if library == "tesseract" {
+		// Use Tesseract for OCR
+		return c.detectTextFromImageUsingTesseract(imagePath)
+	}
+
+	if library == "vision" {
+		// Use Vision Framework for OCR
+		chanText := make(chan string)
+		chanErr := make(chan error)
+		go c.detectTextFromImageUsingVisionAPI(imagePath, chanText, chanErr)
+		return <-chanText, <-chanErr
+	}
+
+	return "", errors.New("invalid OCR library")
 }

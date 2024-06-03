@@ -52,6 +52,13 @@ type Config struct {
 	// make system wait for some time / execute a common boot command etc.).
 	// If more than one empty screen is found, then it is considered as an error.
 	BootScreenConfig parallelscommon.BootScreensConfig `mapstructure:"boot_screen_config" required:"false"`
+	// OCR library to use. Two options are currently supported: "tesseract" and "vision".
+	// "tesseract" uses the Tesseract OCR library to recognize text. A manual installation of -
+	// Tesseract is required for this to work.
+	// "vision" uses the Apple Vision library to recognize text, which is included in macOS. It might -
+	// cause problems in macOS 13 or older VMs.
+	// Defaults to "vision".
+	OCRLibrary string `mapstructure:"ocr_library" required:"false"`
 	// IPSWConfig is the configuration for the IPSW file
 	IPSWConfig IPSWConfig `mapstructure:",squash"`
 	// The size, in megabytes, of the hard disk to create
@@ -149,6 +156,12 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
 			"only one empty screen config is allowed"))
 	}
 
+	if b.config.OCRLibrary == "" {
+		b.config.OCRLibrary = "vision"
+	} else if b.config.OCRLibrary != "tesseract" && b.config.OCRLibrary != "vision" {
+		errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("invalid ocr_library: %s", b.config.OCRLibrary))
+	}
+
 	if errs != nil && len(errs.Errors) > 0 {
 		return nil, warnings, errs
 	}
@@ -193,6 +206,7 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		},
 		&parallelscommon.StepScreenBasedBoot{
 			ScreenConfigs: b.config.BootScreenConfig,
+			OCRLibrary:    b.config.OCRLibrary,
 			VmName:        b.config.VMName,
 			Ctx:           b.config.ctx,
 		},

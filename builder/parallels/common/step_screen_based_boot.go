@@ -23,6 +23,7 @@ import (
 // hard drive for the virtual machine.
 type StepScreenBasedBoot struct {
 	ScreenConfigs []BootScreenConfig
+	OCRLibrary    string
 	VmName        string
 	Ctx           interpolate.Context
 }
@@ -146,8 +147,8 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 		}
 
 		// Use OCR to detect the text in the screenshot
-		visionOCR := VisionOCR{}
-		text, err := visionOCR.RecognizeText(file.Name())
+		ocrRunner := OCRRunner{}
+		text, err := ocrRunner.RecognizeText(file.Name(), s.OCRLibrary)
 		if err != nil {
 			fmt.Println("Error:", err)
 			return multistep.ActionHalt

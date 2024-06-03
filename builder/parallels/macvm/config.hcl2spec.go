@@ -78,6 +78,7 @@ type FlatConfig struct {
 	BootWait                  *string                       `mapstructure:"boot_wait" cty:"boot_wait" hcl:"boot_wait"`
 	BootCommand               []string                      `mapstructure:"boot_command" cty:"boot_command" hcl:"boot_command"`
 	BootScreenConfig          []common.FlatBootScreenConfig `mapstructure:"boot_screen_config" required:"false" cty:"boot_screen_config" hcl:"boot_screen_config"`
+	OCRLibrary                *string                       `mapstructure:"ocr_library" required:"false" cty:"ocr_library" hcl:"ocr_library"`
 	SourcePath                *string                       `mapstructure:"source_path" required:"true" cty:"source_path" hcl:"source_path"`
 	VMName                    *string                       `mapstructure:"vm_name" required:"false" cty:"vm_name" hcl:"vm_name"`
 	ReassignMAC               *bool                         `mapstructure:"reassign_mac" required:"false" cty:"reassign_mac" hcl:"reassign_mac"`
@@ -162,6 +163,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"boot_wait":                    &hcldec.AttrSpec{Name: "boot_wait", Type: cty.String, Required: false},
 		"boot_command":                 &hcldec.AttrSpec{Name: "boot_command", Type: cty.List(cty.String), Required: false},
 		"boot_screen_config":           &hcldec.BlockListSpec{TypeName: "boot_screen_config", Nested: hcldec.ObjectSpec((*common.FlatBootScreenConfig)(nil).HCL2Spec())},
+		"ocr_library":                  &hcldec.AttrSpec{Name: "ocr_library", Type: cty.String, Required: false},
 		"source_path":                  &hcldec.AttrSpec{Name: "source_path", Type: cty.String, Required: false},
 		"vm_name":                      &hcldec.AttrSpec{Name: "vm_name", Type: cty.String, Required: false},
 		"reassign_mac":                 &hcldec.AttrSpec{Name: "reassign_mac", Type: cty.Bool, Required: false},

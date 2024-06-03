@@ -88,6 +88,7 @@ type FlatConfig struct {
 	WinRMInsecure             *bool                         `mapstructure:"winrm_insecure" cty:"winrm_insecure" hcl:"winrm_insecure"`
 	WinRMUseNTLM              *bool                         `mapstructure:"winrm_use_ntlm" cty:"winrm_use_ntlm" hcl:"winrm_use_ntlm"`
 	BootScreenConfig          []common.FlatBootScreenConfig `mapstructure:"boot_screen_config" required:"false" cty:"boot_screen_config" hcl:"boot_screen_config"`
+	OCRLibrary                *string                       `mapstructure:"ocr_library" required:"false" cty:"ocr_library" hcl:"ocr_library"`
 	IPSWChecksum              *string                       `mapstructure:"ipsw_checksum" required:"true" cty:"ipsw_checksum" hcl:"ipsw_checksum"`
 	RawSingleIPSWUrl          *string                       `mapstructure:"ipsw_url" required:"true" cty:"ipsw_url" hcl:"ipsw_url"`
 	IPSWUrls                  []string                      `mapstructure:"ipsw_urls" cty:"ipsw_urls" hcl:"ipsw_urls"`
@@ -186,6 +187,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"winrm_insecure":               &hcldec.AttrSpec{Name: "winrm_insecure", Type: cty.Bool, Required: false},
 		"winrm_use_ntlm":               &hcldec.AttrSpec{Name: "winrm_use_ntlm", Type: cty.Bool, Required: false},
 		"boot_screen_config":           &hcldec.BlockListSpec{TypeName: "boot_screen_config", Nested: hcldec.ObjectSpec((*common.FlatBootScreenConfig)(nil).HCL2Spec())},
+		"ocr_library":                  &hcldec.AttrSpec{Name: "ocr_library", Type: cty.String, Required: false},
 		"ipsw_checksum":                &hcldec.AttrSpec{Name: "ipsw_checksum", Type: cty.String, Required: false},
 		"ipsw_url":                     &hcldec.AttrSpec{Name: "ipsw_url", Type: cty.String, Required: false},
 		"ipsw_urls":                    &hcldec.AttrSpec{Name: "ipsw_urls", Type: cty.List(cty.String), Required: false},
