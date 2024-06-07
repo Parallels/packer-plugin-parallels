@@ -29,6 +29,22 @@ type Config struct {
 	parallelscommon.SSHConfig           `mapstructure:",squash"`
 	shutdowncommand.ShutdownConfig      `mapstructure:",squash"`
 	bootcommand.BootConfig              `mapstructure:",squash"`
+
+	// Screens and it's boot configs
+	// A screen is considered matched if all the matching strings are present in the screen.
+	// The first matching screen will be considered & boot config of that screen will be used.
+	// If matching strings are empty, then it is considered as empty screen,
+	// which will be considered when none of the other screens are matched (You can use this screen to -
+	// make system wait for some time / execute a common boot command etc.).
+	// If more than one empty screen is found, then it is considered as an error.
+	BootScreenConfig parallelscommon.BootScreensConfig `mapstructure:"boot_screen_config" required:"false"`
+	// OCR library to use. Two options are currently supported: "tesseract" and "vision".
+	// "tesseract" uses the Tesseract OCR library to recognize text. A manual installation of -
+	// Tesseract is required for this to work.
+	// "vision" uses the Apple Vision library to recognize text, which is included in macOS. It might -
+	// cause problems in macOS 13 or older VMs.
+	// Defaults to "vision".
+	OCRLibrary string `mapstructure:"ocr_library" required:"false"`
 	// The path to a MACVM directory that acts as the source
 	// of this build.
 	SourcePath string `mapstructure:"source_path" required:"true"`
@@ -75,6 +91,27 @@ func (c *Config) Prepare(raws ...interface{}) ([]string, error) {
 	errs = packersdk.MultiErrorAppend(errs, c.BootConfig.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.ShutdownConfig.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.SSHConfig.Prepare(&c.ctx)...)
+
+	fmt.Fprintln(os.Stderr, "Screen count is : ", len(c.BootScreenConfig))
+
+	emptyScreenCount := 0
+	for _, screenConfig := range c.BootScreenConfig {
+		errs = packersdk.MultiErrorAppend(errs, screenConfig.Prepare(&c.ctx)...)
+		if len(screenConfig.MatchingStrings) == 0 {
+			emptyScreenCount++
+		}
+	}
+
+	if emptyScreenCount > 1 {
+		errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("more than one empty screen config found."+
+			"only one empty screen config is allowed"))
+	}
+
+	if c.OCRLibrary == "" {
+		c.OCRLibrary = "vision"
+	} else if c.OCRLibrary != "tesseract" && c.OCRLibrary != "vision" {
+		errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("invalid ocr_library: %s", c.OCRLibrary))
+	}
 
 	if c.SourcePath == "" {
 		errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("source_path is required"))

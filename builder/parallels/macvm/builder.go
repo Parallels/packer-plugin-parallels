@@ -77,6 +77,12 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			Ctx:            b.config.ctx,
 			GroupInterval:  b.config.BootConfig.BootGroupInterval,
 		},
+		&parallelscommon.StepScreenBasedBoot{
+			ScreenConfigs: b.config.BootScreenConfig,
+			OCRLibrary:    b.config.OCRLibrary,
+			VmName:        b.config.VMName,
+			Ctx:           b.config.ctx,
+		},
 		&communicator.StepConnect{
 			Config:    &b.config.SSHConfig.Comm,
 			Host:      parallelscommon.CommHost(b.config.SSHConfig.Comm.Host()),

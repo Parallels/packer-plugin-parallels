@@ -1,5 +1,20 @@
 <!-- Code generated from the comments of the Config struct in builder/parallels/ipsw/builder.go; DO NOT EDIT MANUALLY -->
 
+- `boot_screen_config` (parallelscommon.BootScreensConfig) - Screens and it's boot configs
+  A screen is considered matched if all the matching strings are present in the screen.
+  The first matching screen will be considered & boot config of that screen will be used.
+  If matching strings are empty, then it is considered as empty screen,
+  which will be considered when none of the other screens are matched (You can use this screen to -
+  make system wait for some time / execute a common boot command etc.).
+  If more than one empty screen is found, then it is considered as an error.
+
+- `ocr_library` (string) - OCR library to use. Two options are currently supported: "tesseract" and "vision".
+  "tesseract" uses the Tesseract OCR library to recognize text. A manual installation of -
+  Tesseract is required for this to work.
+  "vision" uses the Apple Vision library to recognize text, which is included in macOS. It might -
+  cause problems in macOS 13 or older VMs.
+  Defaults to "vision".
+
 - `disk_size` (uint) - The size, in megabytes, of the hard disk to create
   for the VM. By default, this is 40000 (about 40 GB).
 
@@ -7,6 +22,7 @@
   host should be searched for a IP address. The first IP address found on one
   of these will be used as `{{ .HTTPIP }}` in the boot_command. Defaults to
   ["en0", "en1", "en2", "en3", "en4", "en5", "en6", "en7", "en8", "en9",
+  "en10", "en11", "en12", "en13", "en14", "en15", "en16", "en17", "en18", "en19", "en20",
   "en10", "en11", "en12", "en13", "en14", "en15", "en16", "en17", "en18", "en19", "en20",
   "ppp0", "ppp1", "ppp2"].
 
