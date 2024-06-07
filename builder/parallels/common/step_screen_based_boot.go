@@ -133,6 +133,12 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 	lastScreenName := ""
 	for {
 		log.Println("Checking screen...")
+
+		// Checking for interrupt
+		if state.Get(multistep.StateCancelled) != nil {
+			return multistep.ActionHalt
+		}
+
 		// Check if the minimum delay has passed
 		if time.Since(prevTime) < minDelay {
 			time.Sleep(minDelay - time.Since(prevTime))
