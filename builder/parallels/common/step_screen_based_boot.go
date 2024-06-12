@@ -131,6 +131,7 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 	prevTime := time.Now()
 	minDelay := 1 * time.Second
 	lastScreenName := ""
+	ocrRunner := NewOCRRunner()
 	for {
 		log.Println("Checking screen...")
 
@@ -153,7 +154,6 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 		}
 
 		// Use OCR to detect the text in the screenshot
-		ocrRunner := OCRRunner{}
 		text, err := ocrRunner.RecognizeText(file.Name(), s.OCRLibrary)
 		if err != nil {
 			fmt.Println("Error:", err)
