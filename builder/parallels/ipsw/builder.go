@@ -197,6 +197,7 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			Ctx:      b.config.ctx,
 		},
 		&parallelscommon.StepRun{},
+		new(stepWaitForInstall),
 		&parallelscommon.StepTypeBootCommand{
 			BootWait:       b.config.BootWait,
 			BootCommand:    b.config.FlatBootCommand(),
