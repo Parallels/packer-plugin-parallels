@@ -149,10 +149,14 @@ func (c *OCRRunner) executeBinary(binaryPath string, args ...string) (string, er
 // OCRRunner is a struct that acts as an Adapter to Apple's Vision Framework for Optical Character Recognition.
 type OCRRunner struct {
 	referenceScalingFactor float32
+	OCRLibrary             string
 }
 
-func NewOCRRunner() *OCRRunner {
-	return &OCRRunner{referenceScalingFactor: 0.0}
+func NewOCRRunner(OCRLibrary string) *OCRRunner {
+	return &OCRRunner{
+		referenceScalingFactor: 0.0,
+		OCRLibrary:             OCRLibrary,
+	}
 }
 
 func (c *OCRRunner) detectTextFromImageUsingTesseract(imagePath string) (string, error) {
@@ -171,15 +175,19 @@ func (c *OCRRunner) detectTextFromImageUsingTesseract(imagePath string) (string,
 	return detectedText, nil
 }
 
-func (c *OCRRunner) detectTextFromImageUsingVisionAPI(imagePath string, text chan<- string, err chan<- error) {
+func (c *OCRRunner) detectTextFromImageUsingVisionAPI(imagePath string, useRefScalingFactor bool, text chan<- string, err chan<- error) {
 	detectedText := C.CString("")
 	defer C.free(unsafe.Pointer(detectedText))
 	errorBuffer := C.CString("")
 	defer C.free(unsafe.Pointer(errorBuffer))
 
-	refScalingFactor := C.double(c.referenceScalingFactor)
+	refScalingFactor := C.double(0.0)
+	if useRefScalingFactor {
+		refScalingFactor = C.double(c.referenceScalingFactor)
+	}
+
 	bestScalingFactor := C.double(0.0)
-	log.Printf("refScalingFactor: %f", c.referenceScalingFactor)
+	log.Printf("refScalingFactor: %f", refScalingFactor)
 	result := C.detectTextFromImage(C.CString(imagePath), refScalingFactor, &detectedText, &errorBuffer, &bestScalingFactor)
 	if !result {
 		text <- ""
@@ -193,17 +201,17 @@ func (c *OCRRunner) detectTextFromImageUsingVisionAPI(imagePath string, text cha
 }
 
 // Extracts text from the image at the given path. Uses "Accurate" recognition level.
-func (c *OCRRunner) RecognizeText(imagePath string, library string) (text string, err error) {
-	if library == "tesseract" {
+func (c *OCRRunner) RecognizeText(imagePath string, useRefScalingFactor bool) (text string, err error) {
+	if c.OCRLibrary == "tesseract" {
 		// Use Tesseract for OCR
 		return c.detectTextFromImageUsingTesseract(imagePath)
 	}
 
-	if library == "vision" {
+	if c.OCRLibrary == "vision" {
 		// Use Vision Framework for OCR
 		chanText := make(chan string)
 		chanErr := make(chan error)
-		go c.detectTextFromImageUsingVisionAPI(imagePath, chanText, chanErr)
+		go c.detectTextFromImageUsingVisionAPI(imagePath, useRefScalingFactor, chanText, chanErr)
 		return <-chanText, <-chanErr
 	}
 
