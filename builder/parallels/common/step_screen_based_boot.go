@@ -131,7 +131,7 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 	prevTime := time.Now()
 	minDelay := 1 * time.Second
 	lastScreenName := ""
-	ocrRunner := NewOCRRunner()
+	ocrRunner := NewOCRRunner(s.OCRLibrary)
 	for {
 		log.Println("Checking screen...")
 
@@ -153,19 +153,32 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 			return multistep.ActionHalt
 		}
 
-		// Use OCR to detect the text in the screenshot
-		text, err := ocrRunner.RecognizeText(file.Name(), s.OCRLibrary)
-		if err != nil {
-			fmt.Println("Error:", err)
-			return multistep.ActionHalt
-		}
+		// A reference scaling factor will be tried first.
+		// If it fails, the scaling factor will be set to 0.0 and the OCR will be tried again.
+		useRefScalingFactor := true
+		screenConfig := BootScreenConfig{}
 
-		log.Println("Recognized text:", text)
-		// Detect the screen based on the text
-		screenConfig := s.detectScreen(text)
-		if screenConfig.ScreenName == "" {
-			log.Printf("No matching screen found for text on screen : %s.\n", text)
-			return multistep.ActionHalt
+		for {
+			// Use OCR to detect the text in the screenshot
+			text, err := ocrRunner.RecognizeText(file.Name(), useRefScalingFactor)
+			if err != nil {
+				fmt.Println("Error:", err)
+				return multistep.ActionHalt
+			}
+
+			log.Println("Recognized text:", text)
+			// Detect the screen based on the text
+			screenConfig = s.detectScreen(text)
+			if screenConfig.ScreenName == "" {
+				log.Printf("No matching screen found for text on screen : %s.\n", text)
+				return multistep.ActionHalt
+			}
+
+			if useRefScalingFactor && (screenConfig.MatchingStrings == nil || len(screenConfig.MatchingStrings) == 0) {
+				useRefScalingFactor = false
+			} else {
+				break
+			}
 		}
 
 		if screenConfig.ScreenName == lastScreenName {
