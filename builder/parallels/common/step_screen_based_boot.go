@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/packer-plugin-sdk/bootcommand"
@@ -26,49 +24,6 @@ type StepScreenBasedBoot struct {
 	OCRLibrary    string
 	VmName        string
 	Ctx           interpolate.Context
-}
-
-func (s *StepScreenBasedBoot) executeBinary(binaryPath string, args ...string) (string, error) {
-	// Run the binary with the specified path and arguments
-	cmd := exec.Command(binaryPath, args...)
-
-	// Capture the output
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-
-	// Convert output to string and return
-	result := string(output)
-	return result, nil
-}
-
-func (s *StepScreenBasedBoot) detectScreen(text string) BootScreenConfig {
-	text = strings.ToLower(text)
-	emptyBootConfig := BootScreenConfig{}
-
-	for _, screenConfig := range s.ScreenConfigs {
-		// Empty screens are not considered for matching
-		if (screenConfig.MatchingStrings == nil) || (len(screenConfig.MatchingStrings) == 0) {
-			emptyBootConfig = screenConfig
-			continue
-		}
-
-		// Check if all screenConfig.MatchingStrings are present in text. If all are present, return the screenConfig
-		matching := true
-		for _, matchingString := range screenConfig.MatchingStrings {
-			if !strings.Contains(text, matchingString) {
-				matching = false
-				break
-			}
-		}
-
-		if matching {
-			return screenConfig
-		}
-	}
-
-	return emptyBootConfig
 }
 
 func (s *StepScreenBasedBoot) executeBootCommand(bootConfig bootcommand.BootConfig, ctx context.Context, state multistep.StateBag) error {
@@ -131,7 +86,7 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 	prevTime := time.Now()
 	minDelay := 1 * time.Second
 	lastScreenName := ""
-	ocrRunner := NewOCRRunner(s.OCRLibrary)
+	ocrWrapper, _ := NewOCRWrapper(s.OCRLibrary, s.ScreenConfigs)
 	for {
 		log.Println("Checking screen...")
 
@@ -147,38 +102,16 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 		prevTime = time.Now()
 
 		// Capturing the screenshot
-		_, err := s.executeBinary(binaryPath, args...)
+		_, err := executeBinary(binaryPath, args...)
 		if err != nil {
 			log.Println("Error:", err)
 			return multistep.ActionHalt
 		}
 
-		// A reference scaling factor will be tried first.
-		// If it fails, the scaling factor will be set to 0.0 and the OCR will be tried again.
-		useRefScalingFactor := true
-		screenConfig := BootScreenConfig{}
-
-		for {
-			// Use OCR to detect the text in the screenshot
-			text, err := ocrRunner.RecognizeText(file.Name(), useRefScalingFactor)
-			if err != nil {
-				fmt.Println("Error:", err)
-				return multistep.ActionHalt
-			}
-
-			log.Println("Recognized text:", text)
-			// Detect the screen based on the text
-			screenConfig = s.detectScreen(text)
-			if screenConfig.ScreenName == "" {
-				log.Printf("No matching screen found for text on screen : %s.\n", text)
-				return multistep.ActionHalt
-			}
-
-			if useRefScalingFactor && (screenConfig.MatchingStrings == nil || len(screenConfig.MatchingStrings) == 0) {
-				useRefScalingFactor = false
-			} else {
-				break
-			}
+		screenConfig, err := ocrWrapper.IdentifyCurrentScreen(file.Name())
+		if err != nil {
+			log.Println("Error:", err)
+			return multistep.ActionHalt
 		}
 
 		if screenConfig.ScreenName == lastScreenName {

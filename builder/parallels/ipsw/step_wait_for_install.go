@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	parallelscommon "github.com/Parallels/packer-plugin-parallels/builder/parallels/common"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 )
@@ -98,15 +97,4 @@ func (s *stepWaitForInstall) Run(ctx context.Context, state multistep.StateBag) 
 }
 
 func (s *stepWaitForInstall) Cleanup(state multistep.StateBag) {
-	if s.vmName == "" {
-		return
-	}
-
-	driver := state.Get("driver").(parallelscommon.Driver)
-	ui := state.Get("ui").(packersdk.Ui)
-
-	ui.Say("Unregistering virtual machine...")
-	if err := driver.Prlctl("unregister", s.vmName); err != nil {
-		ui.Error(fmt.Sprintf("Error unregistering virtual machine: %s", err))
-	}
 }
