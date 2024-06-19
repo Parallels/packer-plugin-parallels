@@ -104,7 +104,8 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 		// Capturing the screenshot
 		_, err := executeBinary(binaryPath, args...)
 		if err != nil {
-			log.Println("Error:", err)
+			log.Println("Error: '", err, "' while capturing the screenshot.")
+			ui.Error("Error capturing the screenshot. Make sure you have the necessary permissions.")
 			return multistep.ActionHalt
 		}
 
