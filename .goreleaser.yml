@@ -9,7 +9,7 @@ before:
   hooks:
     # We strongly recommend running tests to catch any regression before release.
     # Even though, this an optional step.
-    - go test ./...
+    - go test ./... -count=1
     # Check plugin compatibility with required version of the Packer SDK
     - make plugin-check
 builds:
