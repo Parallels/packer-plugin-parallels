@@ -58,51 +58,51 @@ builds:
       - amd64
       - arm64
     binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
-  -
-    id: other-builds
-    mod_timestamp: '{{ .CommitTimestamp }}'
-    flags:
-      - -trimpath #removes all file system paths from the compiled executable
-    ldflags:
-      - '-s -w -X {{ .ModulePath }}/version.Version={{.Version}} -X {{ .ModulePath }}/version.VersionPrerelease= '
-    goos:
-      - netbsd
-      - openbsd
-      - freebsd
-      - windows
-      - solaris
-    goarch:
-      - amd64
-      - '386'
-      - arm
-    ignore:
-      - goos: windows
-        goarch: arm
-      - goos: solaris
-        goarch: arm
-      - goos: solaris
-        goarch: '386'
-    binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
-archives:
-- format: zip
-  files:
-    - none*
-  name_template: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
-checksum:
-  name_template: '{{ .ProjectName }}_v{{ .Version }}_SHA256SUMS'
-  algorithm: sha256
-signs:
-  - artifacts: checksum
-    args:
-      # if you are using this is in a GitHub action or some other automated pipeline, you
-      # need to pass the batch flag to indicate its not interactive.
-      - "--batch"
-      - "--local-user"
-      - "{{ .Env.GPG_FINGERPRINT }}"
-      - "--output"
-      - "${signature}"
-      - "--detach-sign"
-      - "${artifact}"
+#   -
+#     id: other-builds
+#     mod_timestamp: '{{ .CommitTimestamp }}'
+#     flags:
+#       - -trimpath #removes all file system paths from the compiled executable
+#     ldflags:
+#       - '-s -w -X {{ .ModulePath }}/version.Version={{.Version}} -X {{ .ModulePath }}/version.VersionPrerelease= '
+#     goos:
+#       - netbsd
+#       - openbsd
+#       - freebsd
+#       - windows
+#       - solaris
+#     goarch:
+#       - amd64
+#       - '386'
+#       - arm
+#     ignore:
+#       - goos: windows
+#         goarch: arm
+#       - goos: solaris
+#         goarch: arm
+#       - goos: solaris
+#         goarch: '386'
+#     binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
+# archives:
+# - format: zip
+#   files:
+#     - none*
+#   name_template: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
+# checksum:
+#   name_template: '{{ .ProjectName }}_v{{ .Version }}_SHA256SUMS'
+#   algorithm: sha256
+# signs:
+#   - artifacts: checksum
+#     args:
+#       # if you are using this is in a GitHub action or some other automated pipeline, you
+#       # need to pass the batch flag to indicate its not interactive.
+#       - "--batch"
+#       - "--local-user"
+#       - "{{ .Env.GPG_FINGERPRINT }}"
+#       - "--output"
+#       - "${signature}"
+#       - "--detach-sign"
+#       - "${artifact}"
 
 changelog:
   use: github-native
