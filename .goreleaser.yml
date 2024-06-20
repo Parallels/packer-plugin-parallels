@@ -4,11 +4,12 @@
 # This is an example goreleaser.yaml file with some defaults.
 # Make sure to check the documentation at http://goreleaser.com
 env:
-  - CGO_ENABLED=0
+  - CGO_ENABLED=1
 before:
   hooks:
     # We strongly recommend running tests to catch any regression before release.
     # Even though, this an optional step.
+    - go clean -testcache
     - go test ./... -count=1
     # Check plugin compatibility with required version of the Packer SDK
     - make plugin-check
