@@ -1,6 +1,8 @@
 module github.com/Parallels/packer-plugin-parallels
 
-go 1.18
+go 1.21.0
+
+toolchain go1.22.3
 
 require (
 	github.com/ChrisTrenkamp/goxpath v0.0.0-20210404020558-97928f7e12b6
