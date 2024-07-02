@@ -83,26 +83,26 @@ builds:
 #       - goos: solaris
 #         goarch: '386'
 #     binary: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
-# archives:
-# - format: zip
-#   files:
-#     - none*
-#   name_template: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
-# checksum:
-#   name_template: '{{ .ProjectName }}_v{{ .Version }}_SHA256SUMS'
-#   algorithm: sha256
-# signs:
-#   - artifacts: checksum
-#     args:
-#       # if you are using this is in a GitHub action or some other automated pipeline, you
-#       # need to pass the batch flag to indicate its not interactive.
-#       - "--batch"
-#       - "--local-user"
-#       - "{{ .Env.GPG_FINGERPRINT }}"
-#       - "--output"
-#       - "${signature}"
-#       - "--detach-sign"
-#       - "${artifact}"
+archives:
+- format: zip
+  files:
+    - none*
+  name_template: '{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}'
+checksum:
+  name_template: '{{ .ProjectName }}_v{{ .Version }}_SHA256SUMS'
+  algorithm: sha256
+signs:
+  - artifacts: checksum
+    args:
+      # if you are using this is in a GitHub action or some other automated pipeline, you
+      # need to pass the batch flag to indicate its not interactive.
+      - "--batch"
+      - "--local-user"
+      - "{{ .Env.GPG_FINGERPRINT }}"
+      - "--output"
+      - "${signature}"
+      - "--detach-sign"
+      - "${artifact}"
 
 changelog:
   use: github-native
