@@ -129,6 +129,17 @@ can also be supplied to override the typical auto-generated key:
   Kickstart or other early initialization tools, which can benefit from labelled floppy disks.
   By default, the floppy label will be 'packer'.
 
+- `cd_files` ([]string) - A list of files to place onto a CD that is attached when the VM is
+  booted. This can include either files or directories; any directories
+  will be copied onto the CD recursively, preserving directory structure
+  hierarchy. Symlinks will have the link's target copied into the directory
+  tree on the CD where the symlink was. File globbing is allowed.
+
+- `cd_content` (map[string]string) - Key/Values to add to the CD. The keys represent the paths, and the values
+  contents. It can be used alongside `cd_files`, which is useful to add large
+  files without loading them into memory. If any paths are specified by both,
+  the contents in `cd_content` will take precedence.
+
 - `guest_os_type` (string) - The guest OS type being installed. By default
   this is "other", but you can get _dramatic_ performance improvements by
   setting this to the proper value. To view all available values for this run

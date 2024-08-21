@@ -24,6 +24,7 @@ import (
 type Config struct {
 	common.PackerConfig                 `mapstructure:",squash"`
 	commonsteps.FloppyConfig            `mapstructure:",squash"`
+	commonsteps.CDConfig                `mapstructure:",squash"`
 	parallelscommon.OutputConfig        `mapstructure:",squash"`
 	parallelscommon.PrlctlConfig        `mapstructure:",squash"`
 	parallelscommon.PrlctlPostConfig    `mapstructure:",squash"`
