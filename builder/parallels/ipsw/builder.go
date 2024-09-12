@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	parallelscommon "github.com/Parallels/packer-plugin-parallels/builder/parallels/common"
 	"github.com/hashicorp/hcl/v2/hcldec"
@@ -44,6 +45,22 @@ type Config struct {
 	parallelscommon.PrlctlVersionConfig `mapstructure:",squash"`
 	shutdowncommand.ShutdownConfig      `mapstructure:",squash"`
 	parallelscommon.SSHConfig           `mapstructure:",squash"`
+
+	// Screens and it's boot configs
+	// A screen is considered matched if all the matching strings are present in the screen.
+	// The first matching screen will be considered & boot config of that screen will be used.
+	// If matching strings are empty, then it is considered as empty screen,
+	// which will be considered when none of the other screens are matched (You can use this screen to -
+	// make system wait for some time / execute a common boot command etc.).
+	// If more than one empty screen is found, then it is considered as an error.
+	BootScreenConfig parallelscommon.BootScreensConfig `mapstructure:"boot_screen_config" required:"false"`
+	// OCR library to use. Two options are currently supported: "tesseract" and "vision".
+	// "tesseract" uses the Tesseract OCR library to recognize text. A manual installation of -
+	// Tesseract is required for this to work.
+	// "vision" uses the Apple Vision library to recognize text, which is included in macOS. It might -
+	// cause problems in macOS 13 or older VMs.
+	// Defaults to "vision".
+	OCRLibrary string `mapstructure:"ocr_library" required:"false"`
 	// IPSWConfig is the configuration for the IPSW file
 	IPSWConfig IPSWConfig `mapstructure:",squash"`
 	// The size, in megabytes, of the hard disk to create
@@ -53,6 +70,8 @@ type Config struct {
 	// host should be searched for a IP address. The first IP address found on one
 	// of these will be used as `{{ .HTTPIP }}` in the boot_command. Defaults to
 	// ["en0", "en1", "en2", "en3", "en4", "en5", "en6", "en7", "en8", "en9",
+	// "en10", "en11", "en12", "en13", "en14", "en15", "en16", "en17", "en18", "en19", "en20",
+	// "en10", "en11", "en12", "en13", "en14", "en15", "en16", "en17", "en18", "en19", "en20",
 	// "ppp0", "ppp1", "ppp2"].
 	HostInterfaces []string `mapstructure:"host_interfaces" required:"false"`
 	// This is the name of the PVM directory for the new
@@ -107,8 +126,10 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
 	}
 
 	if len(b.config.HostInterfaces) == 0 {
-		b.config.HostInterfaces = []string{"en0", "en1", "en2", "en3", "en4", "en5", "en6", "en7",
-			"en8", "en9", "ppp0", "ppp1", "ppp2"}
+		b.config.HostInterfaces = []string{
+			"en0", "en1", "en2", "en3", "en4", "en5", "en6", "en7",
+			"en8", "en9", "ppp0", "ppp1", "ppp2",
+		}
 	}
 
 	if b.config.VMName == "" {
@@ -120,6 +141,27 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
 		warnings = append(warnings,
 			"A shutdown_command was not specified. Without a shutdown command, Packer\n"+
 				"will forcibly halt the virtual machine, which may result in data loss.")
+	}
+
+	fmt.Fprintln(os.Stderr, "Screen count is : ", len(b.config.BootScreenConfig))
+
+	emptyScreenCount := 0
+	for _, screenConfig := range b.config.BootScreenConfig {
+		errs = packersdk.MultiErrorAppend(errs, screenConfig.Prepare(&b.config.ctx)...)
+		if len(screenConfig.MatchingStrings) == 0 {
+			emptyScreenCount++
+		}
+	}
+
+	if emptyScreenCount > 1 {
+		errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("more than one empty screen config found."+
+			"only one empty screen config is allowed"))
+	}
+
+	if b.config.OCRLibrary == "" {
+		b.config.OCRLibrary = "vision"
+	} else if b.config.OCRLibrary != "tesseract" && b.config.OCRLibrary != "vision" {
+		errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("invalid ocr_library: %s", b.config.OCRLibrary))
 	}
 
 	if errs != nil && len(errs.Errors) > 0 {
@@ -151,7 +193,13 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		},
 		commonsteps.HTTPServerFromHTTPConfig(&b.config.HTTPConfig),
 		new(stepCreateVM),
+		new(stepCreateDisk),
+		&parallelscommon.StepPrlctl{
+			Commands: b.config.Prlctl,
+			Ctx:      b.config.ctx,
+		},
 		&parallelscommon.StepRun{},
+		new(stepWaitForInstall),
 		&parallelscommon.StepTypeBootCommand{
 			BootWait:       b.config.BootWait,
 			BootCommand:    b.config.FlatBootCommand(),
@@ -160,27 +208,42 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			Ctx:            b.config.ctx,
 			GroupInterval:  b.config.BootConfig.BootGroupInterval,
 		},
+		&parallelscommon.StepScreenBasedBoot{
+			ScreenConfigs: b.config.BootScreenConfig,
+			OCRLibrary:    b.config.OCRLibrary,
+			VmName:        b.config.VMName,
+			Ctx:           b.config.ctx,
+		},
 		&communicator.StepConnect{
 			Config:    &b.config.SSHConfig.Comm,
 			Host:      parallelscommon.CommHost(b.config.SSHConfig.Comm.Host()),
 			SSHConfig: b.config.SSHConfig.Comm.SSHConfigFunc(),
 		},
-		&parallelscommon.StepUploadVersion{
-			Path: b.config.PrlctlVersionFile,
-		},
-		new(commonsteps.StepProvision),
-		&commonsteps.StepCleanupTempKeys{
-			Comm: &b.config.SSHConfig.Comm,
-		},
-		&parallelscommon.StepShutdown{
-			Command: b.config.ShutdownCommand,
-			Timeout: b.config.ShutdownTimeout,
-		},
+	}
+
+	// Add post-communitcation steps
+	if b.config.SSHConfig.Comm.Type != "none" {
+		steps = append(steps, []multistep.Step{
+			&parallelscommon.StepUploadVersion{
+				Path: b.config.PrlctlVersionFile,
+			},
+			new(commonsteps.StepProvision),
+			&commonsteps.StepCleanupTempKeys{
+				Comm: &b.config.SSHConfig.Comm,
+			},
+			&parallelscommon.StepShutdown{
+				Command: b.config.ShutdownCommand,
+				Timeout: b.config.ShutdownTimeout,
+			},
+		}...)
+	}
+
+	steps = append(steps, []multistep.Step{
 		&parallelscommon.StepPrlctl{
 			Commands: b.config.PrlctlPost,
 			Ctx:      b.config.ctx,
 		},
-	}
+	}...)
 
 	// Setup the state bag
 	state := new(multistep.BasicStateBag)

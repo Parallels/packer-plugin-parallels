@@ -77,27 +77,42 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			Ctx:            b.config.ctx,
 			GroupInterval:  b.config.BootConfig.BootGroupInterval,
 		},
+		&parallelscommon.StepScreenBasedBoot{
+			ScreenConfigs: b.config.BootScreenConfig,
+			OCRLibrary:    b.config.OCRLibrary,
+			VmName:        b.config.VMName,
+			Ctx:           b.config.ctx,
+		},
 		&communicator.StepConnect{
 			Config:    &b.config.SSHConfig.Comm,
 			Host:      parallelscommon.CommHost(b.config.SSHConfig.Comm.Host()),
 			SSHConfig: b.config.SSHConfig.Comm.SSHConfigFunc(),
 		},
-		&parallelscommon.StepUploadVersion{
-			Path: b.config.PrlctlVersionFile,
-		},
-		new(commonsteps.StepProvision),
-		&parallelscommon.StepShutdown{
-			Command: b.config.ShutdownCommand,
-			Timeout: b.config.ShutdownTimeout,
-		},
-		&commonsteps.StepCleanupTempKeys{
-			Comm: &b.config.SSHConfig.Comm,
-		},
+	}
+
+	if b.config.SSHConfig.Comm.Type != "none" {
+		// Append the post-communicator steps.
+		steps = append(steps, []multistep.Step{
+			&parallelscommon.StepUploadVersion{
+				Path: b.config.PrlctlVersionFile,
+			},
+			new(commonsteps.StepProvision),
+			&parallelscommon.StepShutdown{
+				Command: b.config.ShutdownCommand,
+				Timeout: b.config.ShutdownTimeout,
+			},
+			&commonsteps.StepCleanupTempKeys{
+				Comm: &b.config.SSHConfig.Comm,
+			},
+		}...)
+	}
+
+	steps = append(steps, []multistep.Step{
 		&parallelscommon.StepPrlctl{
 			Commands: b.config.PrlctlPost,
 			Ctx:      b.config.ctx,
 		},
-	}
+	}...)
 
 	// Run the steps.
 	b.runner = commonsteps.NewRunnerWithPauseFn(steps, b.config.PackerConfig, ui, state)

@@ -5,6 +5,7 @@ package common
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -18,8 +19,78 @@ import (
 
 	"github.com/ChrisTrenkamp/goxpath"
 	"github.com/ChrisTrenkamp/goxpath/tree/xmltree"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/packer-plugin-sdk/tmp"
 )
+
+// Struct to format Scancodes in JSON
+type ScanCodes struct {
+	Scancode int64  `json:"scancode"`
+	Event    string `json:"event"`
+	Delay    int    `json:"delay"`
+}
+
+// sending scancodes to VM via prlctl send-key-event CMD
+func (d *Parallels9Driver) sendJsonScancodes(vmName string, inputScanCodes []string) error {
+	scancodeData := []ScanCodes{}
+
+	log.Println("scancodes received for JSON encoding ", inputScanCodes)
+	delay := 100
+	for i := 0; i < len(inputScanCodes); i++ {
+		key1, convErr_ := strconv.ParseInt(inputScanCodes[i], 16, 64)
+		if convErr_ != nil {
+			log.Println(convErr_, "conversion error for %s", inputScanCodes[i])
+			return convErr_
+		}
+
+		if key1 == 224 {
+			key2, convErr_ := strconv.ParseInt(inputScanCodes[i+1], 16, 64)
+			i = i + 1
+			if convErr_ != nil {
+				log.Println(convErr_, "conversion error for %s", inputScanCodes[i])
+				return convErr_
+			}
+			if key2 < 128 {
+				scancodeData = append(scancodeData, ScanCodes{Scancode: key1, Event: "press", Delay: delay})
+				scancodeData = append(scancodeData, ScanCodes{Scancode: key2, Event: "press", Delay: delay})
+			} else {
+				scancodeData = append(scancodeData, ScanCodes{Scancode: key1, Event: "release", Delay: delay})
+				scancodeData = append(scancodeData, ScanCodes{Scancode: key2 - 128, Event: "release", Delay: delay})
+			}
+		} else if key1 < 128 {
+			scancodeData = append(scancodeData, ScanCodes{Scancode: key1, Event: "press", Delay: delay})
+		} else {
+			scancodeData = append(scancodeData, ScanCodes{Scancode: key1 - 128, Event: "release", Delay: delay})
+		}
+	}
+
+	jsonFormat, err := json.MarshalIndent(scancodeData, "", "\t")
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	log.Printf("complete scancode data in JSON format %s", jsonFormat)
+
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command(d.PrlctlPath, "send-key-event", vmName, "-j")
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	cmd.Stdin = strings.NewReader(string(jsonFormat))
+	err = cmd.Run()
+	stdoutString := strings.TrimSpace(stdout.String())
+	stderrString := strings.TrimSpace(stderr.String())
+	if _, ok := err.(*exec.ExitError); ok {
+		err = fmt.Errorf("prlctl error: %s", stderrString)
+	}
+	log.Printf("stdout: %s", stdoutString)
+	log.Printf("stderr: %s", stderrString)
+
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
 
 // Parallels9Driver is a base type for Parallels builders.
 type Parallels9Driver struct {
@@ -239,6 +310,12 @@ func (d *Parallels9Driver) Stop(name string) error {
 
 // Prlctl executes the specified "prlctl" command.
 func (d *Parallels9Driver) Prlctl(args ...string) error {
+	_, err := d.PrlctlGet(args...)
+	return err
+}
+
+// PrlctlGet executes the given "prlctl" command and returns the output
+func (d *Parallels9Driver) PrlctlGet(args ...string) (string, error) {
 	var stdout, stderr bytes.Buffer
 
 	log.Printf("Executing prlctl: %#v", args)
@@ -257,7 +334,7 @@ func (d *Parallels9Driver) Prlctl(args ...string) error {
 	log.Printf("stdout: %s", stdoutString)
 	log.Printf("stderr: %s", stderrString)
 
-	return err
+	return stdoutString, err
 }
 
 // Verify raises an error if the builder could not be used on that host machine.
@@ -284,44 +361,58 @@ func (d *Parallels9Driver) Version() (string, error) {
 }
 
 // SendKeyScanCodes sends the specified scancodes as key events to the VM.
-// It is performed using "Prltype" script (refer to "prltype.go").
+// It is performed using "Prltype" script (refer to "prltype.go") if version is  < 19.0.0.
+// scancodes are sent by using prlctl CMD if version is  >= 19.0.0
 func (d *Parallels9Driver) SendKeyScanCodes(vmName string, codes ...string) error {
 	var stdout, stderr bytes.Buffer
+	var err error
 
 	if len(codes) == 0 {
 		log.Printf("No scan codes to send")
 		return nil
 	}
 
-	f, err := tmp.File("prltype")
-	if err != nil {
+	prlctlCurrVersionStr, verErr := d.Version()
+	if verErr != nil {
 		return err
 	}
-	defer os.Remove(f.Name())
+	prlctlCurrVersion, _ := version.NewVersion(prlctlCurrVersionStr)
+	v2, _ := version.NewVersion("19.0.0")
 
-	script := []byte(Prltype)
-	_, err = f.Write(script)
-	if err != nil {
-		return err
+	if prlctlCurrVersion.LessThan(v2) {
+
+		f, err := tmp.File("prltype")
+		if err != nil {
+			return err
+		}
+		defer os.Remove(f.Name())
+
+		script := []byte(Prltype)
+		_, err = f.Write(script)
+		if err != nil {
+			return err
+		}
+
+		args := prepend(vmName, codes)
+		args = prepend(f.Name(), args)
+		cmd := exec.Command("/usr/bin/python3", args...)
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+		err = cmd.Run()
+
+		stdoutString := strings.TrimSpace(stdout.String())
+		stderrString := strings.TrimSpace(stderr.String())
+
+		if _, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("prltype error: %s", stderrString)
+			return err
+		}
+
+		log.Printf("stdout: %s", stdoutString)
+		log.Printf("stderr: %s", stderrString)
+	} else {
+		err = d.sendJsonScancodes(vmName, codes)
 	}
-
-	args := prepend(vmName, codes)
-	args = prepend(f.Name(), args)
-	cmd := exec.Command("/usr/bin/python3", args...)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err = cmd.Run()
-
-	stdoutString := strings.TrimSpace(stdout.String())
-	stderrString := strings.TrimSpace(stderr.String())
-
-	if _, ok := err.(*exec.ExitError); ok {
-		err = fmt.Errorf("prltype error: %s", stderrString)
-	}
-
-	log.Printf("stdout: %s", stdoutString)
-	log.Printf("stderr: %s", stderrString)
-
 	return err
 }
 
@@ -376,15 +467,12 @@ func (d *Parallels9Driver) MAC(vmName string) (string, error) {
 	return mac, nil
 }
 
-// IPAddress finds the IP address of a VM connected that uses DHCP by its MAC address
-//
 // Parses the file /Library/Preferences/Parallels/parallels_dhcp_leases
 // file contain a list of DHCP leases given by Parallels Desktop
 // Example line:
 // 10.211.55.181="1418921112,1800,001c42f593fb,ff42f593fb000100011c25b9ff001c42f593fb"
 // IP Address   ="Lease expiry, Lease time, MAC, MAC or DUID"
-func (d *Parallels9Driver) IPAddress(mac string, vmName string) (string, error) {
-
+func (d *Parallels9Driver) ipWithLeases(mac string, vmName string) (string, error) {
 	if len(mac) != 12 {
 		return "", fmt.Errorf("Not a valid MAC address: %s. It should be exactly 12 digits.", mac)
 	}
@@ -408,34 +496,52 @@ func (d *Parallels9Driver) IPAddress(mac string, vmName string) (string, error) 
 		}
 	}
 
-	if len(mostRecentIP) == 0 {
+	return mostRecentIP, nil
+}
+
+func (d *Parallels9Driver) ipWithPrlctl(vmName string) (string, error) {
+	ip := ""
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command(d.PrlctlPath, "list", vmName, "--full", "--no-header", "-o", "ip_configured")
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		log.Printf("Command run failed for Virtual Machine: %s\n", vmName)
+		return "", err
+	}
+
+	stderrString := strings.TrimSpace(stderr.String())
+	if len(stderrString) > 0 {
+		log.Printf("stderr: %s", stderrString)
+	}
+
+	stdoutString := strings.TrimSpace(stdout.String())
+	re := regexp.MustCompile(`([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)`)
+	macMatch := re.FindAllStringSubmatch(stdoutString, 1)
+
+	if len(macMatch) != 1 {
+		return "", fmt.Errorf("Unable to retrieve ip address of VM %s through tools\n", vmName)
+	}
+
+	ip = macMatch[0][1]
+	return ip, nil
+}
+
+// IPAddress finds the IP address of a VM connected that uses DHCP by its MAC address
+// If the MAC address is not found in the DHCP lease file, it will try to find ip using prlctl
+func (d *Parallels9Driver) IPAddress(mac string, vmName string) (string, error) {
+	ip, err := d.ipWithLeases(mac, vmName)
+	if (err != nil) || (len(ip) == 0) {
 		log.Printf("IP lease not found for MAC address %s in: %s\n", mac, d.dhcpLeaseFile)
 
-		var stdout bytes.Buffer
-		cmd := exec.Command(d.PrlctlPath, "list", vmName, "--full", "--no-header", "-o", "ip_configured")
-		cmd.Stdout = &stdout
-		if err := cmd.Run(); err != nil {
-			log.Printf("Command run failed for Virtual Machine: %s\n", vmName)
-			return "", err
+		ip, err = d.ipWithPrlctl(vmName)
+		if (err != nil) || (len(ip) == 0) {
+			return "", fmt.Errorf("IP address not found for this VM using prlctl: %s\n", vmName)
 		}
-
-		stdoutString := strings.TrimSpace(stdout.String())
-		re := regexp.MustCompile(`([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)`)
-		macMatch := re.FindAllStringSubmatch(stdoutString, 1)
-
-		if len(macMatch) != 1 {
-			return "", fmt.Errorf("Unable to retrieve ip address of VM %s through tools\n", vmName)
-		}
-
-		mostRecentIP = macMatch[0][1]
 	}
 
-	if len(mostRecentIP) == 0 {
-		return "", fmt.Errorf("IP address not found for this VM: %s\n", vmName)
-	}
-
-	log.Printf("Found IP lease: %s for MAC address %s\n", mostRecentIP, mac)
-	return mostRecentIP, nil
+	log.Printf("Found IP lease: %s for MAC address %s\n", ip, mac)
+	return ip, nil
 }
 
 // ToolsISOPath returns a full path to the Parallels Tools ISO for the specified guest
