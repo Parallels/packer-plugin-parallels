@@ -20,7 +20,7 @@ import (
 // This step creates the virtual disk that will be used as the
 // hard drive for the virtual machine.
 type StepScreenBasedBoot struct {
-	ScreenConfigs []BootScreenConfig
+	ScreenConfigs map[string]BootScreenConfig
 	OCRLibrary    string
 	VmName        string
 	Ctx           interpolate.Context
@@ -85,7 +85,7 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 
 	prevTime := time.Now()
 	minDelay := 1 * time.Second
-	lastScreenName := ""
+	lastScreen := BootScreenConfig{}
 	ocrWrapper, _ := NewOCRWrapper(s.OCRLibrary, s.ScreenConfigs)
 	for {
 		log.Println("Checking screen...")
@@ -115,11 +115,17 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 			return multistep.ActionHalt
 		}
 
-		if screenConfig.ScreenName == lastScreenName {
+		// If the screen is the same as the last screen and the last screen is not empty, skip the boot command
+		if screenConfig.ScreenName == lastScreen.ScreenName && len(lastScreen.MatchingStrings) > 0 {
 			continue
 		}
 
-		lastScreenName = screenConfig.ScreenName
+		// If we switched the screen & the last screen is execute only once, then remove the screen
+		if len(lastScreen.MatchingStrings) > 0 && lastScreen.ExecuteOnlyOnce {
+			ocrWrapper.RemoveBootScreenConfigIfExist(lastScreen.ScreenName)
+		}
+
+		lastScreen = screenConfig
 		ui.Say("Screen changed to " + screenConfig.ScreenName)
 		// Execute the boot command
 		bootCommand := screenConfig.FlatBootCommand()

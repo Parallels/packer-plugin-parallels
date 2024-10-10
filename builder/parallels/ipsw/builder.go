@@ -48,8 +48,9 @@ type Config struct {
 	// A screen is considered matched if all the matching strings are present in the screen.
 	// The first matching screen will be considered & boot config of that screen will be used.
 	// If matching strings are empty, then it is considered as empty screen,
-	// which will be considered when none of the other screens are matched (You can use this screen to -
-	// make system wait for some time / execute a common boot command etc.).
+	// empty screen has some special meaning, which will be considered when none of the other screens are matched.
+	// You can use this screen to make system wait for some time / execute a common boot command etc.
+	// The empty screen boot command will be executed repeatedly until a non-empty screen is found.
 	// If more than one empty screen is found, then it is considered as an error.
 	BootScreenConfig parallelscommon.BootScreensConfig `mapstructure:"boot_screen_config" required:"false"`
 	// OCR library to use. Two options are currently supported: "tesseract" and "vision".
@@ -77,7 +78,8 @@ type Config struct {
 	// "packer-BUILDNAME", where "BUILDNAME" is the name of the build.
 	VMName string `mapstructure:"vm_name" required:"false"`
 
-	ctx interpolate.Context
+	ctx              interpolate.Context
+	screenConfigsMap map[string]parallelscommon.BootScreenConfig
 }
 
 func (b *Builder) ConfigSpec() hcldec.ObjectSpec { return b.config.FlatMapstructure().HCL2Spec() }
@@ -144,11 +146,23 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
 	fmt.Fprintln(os.Stderr, "Screen count is : ", len(b.config.BootScreenConfig))
 
 	emptyScreenCount := 0
+	b.config.screenConfigsMap = make(map[string]parallelscommon.BootScreenConfig)
 	for _, screenConfig := range b.config.BootScreenConfig {
 		errs = packersdk.MultiErrorAppend(errs, screenConfig.Prepare(&b.config.ctx)...)
 		if len(screenConfig.MatchingStrings) == 0 {
 			emptyScreenCount++
 		}
+
+		if screenConfig.ScreenName == "" {
+			errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("screen_name should not be empty"))
+			continue
+		}
+
+		if _, exists := b.config.screenConfigsMap[screenConfig.ScreenName]; exists {
+			errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("multiple screens with same name: %s", screenConfig.ScreenName))
+			continue
+		}
+		b.config.screenConfigsMap[screenConfig.ScreenName] = screenConfig
 	}
 
 	if emptyScreenCount > 1 {
@@ -207,7 +221,7 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			GroupInterval:  b.config.BootConfig.BootGroupInterval,
 		},
 		&parallelscommon.StepScreenBasedBoot{
-			ScreenConfigs: b.config.BootScreenConfig,
+			ScreenConfigs: b.config.screenConfigsMap,
 			OCRLibrary:    b.config.OCRLibrary,
 			VmName:        b.config.VMName,
 			Ctx:           b.config.ctx,

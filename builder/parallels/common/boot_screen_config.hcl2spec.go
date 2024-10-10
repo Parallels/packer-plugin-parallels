@@ -16,6 +16,7 @@ type FlatBootScreenConfig struct {
 	ScreenName        *string  `mapstructure:"screen_name" cty:"screen_name" hcl:"screen_name"`
 	MatchingStrings   []string `mapstructure:"matching_strings" cty:"matching_strings" hcl:"matching_strings"`
 	IsLastScreen      *bool    `mapstructure:"is_last_screen" cty:"is_last_screen" hcl:"is_last_screen"`
+	ExecuteOnlyOnce   *bool    `mapstructure:"execute_only_once" cty:"execute_only_once" hcl:"execute_only_once"`
 }
 
 // FlatMapstructure returns a new FlatBootScreenConfig.
@@ -36,6 +37,7 @@ func (*FlatBootScreenConfig) HCL2Spec() map[string]hcldec.Spec {
 		"screen_name":            &hcldec.AttrSpec{Name: "screen_name", Type: cty.String, Required: false},
 		"matching_strings":       &hcldec.AttrSpec{Name: "matching_strings", Type: cty.List(cty.String), Required: false},
 		"is_last_screen":         &hcldec.AttrSpec{Name: "is_last_screen", Type: cty.Bool, Required: false},
+		"execute_only_once":      &hcldec.AttrSpec{Name: "execute_only_once", Type: cty.Bool, Required: false},
 	}
 	return s
 }
