@@ -7,7 +7,7 @@ permissions:
 on:
   push:
     branches:
-    - main
+      - main
 jobs:
   build_darwin:
     defaults:
@@ -17,12 +17,12 @@ jobs:
     container:
       image: docker.mirror.hashicorp.services/cimg/go:1.21
     steps:
-    - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
-      with:
-        GOOS: darwin
-        GOARCH: amd64
-    - uses: "./.github/actions/build-and-persist-plugin-binary"
-      with:
-        GOOS: darwin
-        GOARCH: arm64
+      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
+      - uses: './.github/actions/build-and-persist-plugin-binary'
+        with:
+          GOOS: darwin
+          GOARCH: amd64
+      - uses: './.github/actions/build-and-persist-plugin-binary'
+        with:
+          GOOS: darwin
+          GOARCH: arm64
