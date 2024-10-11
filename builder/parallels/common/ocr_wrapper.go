@@ -8,9 +8,11 @@ import "errors"
 type OCRWrapper interface {
 	// IdentifyCurrentScreen takes a screenshot of the current screen and returns the BootScreenConfig that matches the screen.
 	IdentifyCurrentScreen(imagePath string) (bootScreenConfig BootScreenConfig, err error)
+	// Removes the screen config with specified name if exist
+	RemoveBootScreenConfigIfExist(screenName string)
 }
 
-func NewOCRWrapper(OCRLibrary string, ScreenConfigs []BootScreenConfig) (OCRWrapper, error) {
+func NewOCRWrapper(OCRLibrary string, ScreenConfigs map[string]BootScreenConfig) (OCRWrapper, error) {
 	if OCRLibrary == "vision" {
 		return NewVisionOCRWrapper(ScreenConfigs), nil
 	} else if OCRLibrary == "tesseract" {

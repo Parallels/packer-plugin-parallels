@@ -26,6 +26,9 @@ type BootScreenConfig struct {
 	// Specifies if the current screen is the last screen
 	// Screen based boot will stop after this screen
 	IsLastScreen bool `mapstructure:"is_last_screen"`
+	// If true, the screen will be deleted after first execution
+	// Default value is false
+	ExecuteOnlyOnce bool `mapstructure:"execute_only_once"`
 }
 
 func (c *BootScreenConfig) Prepare(ctx *interpolate.Context) (errs []error) {
@@ -35,6 +38,10 @@ func (c *BootScreenConfig) Prepare(ctx *interpolate.Context) (errs []error) {
 	if len(c.ScreenName) == 0 {
 		errs = append(errs,
 			fmt.Errorf("screen name should not be empty"))
+	}
+
+	if !c.ExecuteOnlyOnce {
+		c.ExecuteOnlyOnce = false
 	}
 
 	if len(errs) > 0 {

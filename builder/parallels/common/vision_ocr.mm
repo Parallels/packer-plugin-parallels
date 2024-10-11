@@ -5,6 +5,7 @@
 
 @interface BootScreenConfig : NSObject
 @property(readonly) NSMutableArray<NSString*>* matchingStrings;
+@property(readonly) NSString* screenName;
 @end
 
 @implementation BootScreenConfig
@@ -14,6 +15,11 @@
 		_matchingStrings = [[NSMutableArray alloc] init];
 	}
 	return self;
+}
+
+- (void) setScreenName:(const char*)screenName
+{
+	_screenName = [NSString stringWithUTF8String:screenName];
 }
 
 - (void) addMatchingString:(const char*)matchingString
@@ -41,6 +47,22 @@
 - (void) addBootScreenConfig:(BootScreenConfig*)config
 {
 	[screenConfigs addObject:config];
+}
+
+- (void) deleteBootScreenConfig:(char *)screenName
+{
+	BootScreenConfig* config = nil;
+	for (BootScreenConfig* bsc in screenConfigs)
+	{
+		if ([bsc.screenName isEqualToString:[NSString stringWithUTF8String:screenName]])
+		{
+			config = bsc;
+			break;
+		}
+	}
+
+	if (config)
+		[screenConfigs removeObject:config];
 }
 
 - (NSMutableArray<NSMutableArray<NSNumber *>*>*) createCheckBoxesForScreenConfigs
@@ -136,10 +158,10 @@
  if >0.0, OCR accuracy will be checked from refScaleFactor ± 10% and best result will be returned
  errorBuffer - returns with error text if any
  topConfidenceScaleFactor - returns the scale factor resulted in best OCR accuracy. You can use this as refScaleFactor for next calls with similar images
-
- @returns index of matching boot screen. '-1/empty screen index' if none of them are matching/error
+ detectedScreenName - empty/null if none of the screens are matching/error. The screen name, if matched a screen
  */
-- (int) detectScreenFrom:(const char *)imagePath ScaleFactor:(double)refScaleFactor BestRecognizedText:(char**)textBuffer ErrorBuffer:(char **)errorBuffer TopScaleFactor:(double*)topConfidenceScaleFactor
+- (void) detectScreenFrom:(const char *)imagePath ScaleFactor:(double)refScaleFactor BestRecognizedText:(char**)textBuffer 
+					ErrorBuffer:(char **)errorBuffer TopScaleFactor:(double*)topConfidenceScaleFactor Result:(char**)detectedScreenName
 {
 	@autoreleasepool {
 		//Creating the image
@@ -149,7 +171,7 @@
 		if (!image)
 		{
 			*errorBuffer = strdup("an image does not exist at the path");
-			return -1;
+			return;
 		}
 
 		// Get the extent of the image
@@ -177,10 +199,12 @@
 			// Get the scaled image
 			CIFilter* filter = [self scaleFilter:image factor:scaleFactor];
 			CIImage* scaledImage = [filter outputImage];
+			// Recognize the text
 			NSArray<VNRecognizedTextObservation *> * textObservations = [self recognizeText:scaledImage errorBuffer:errorBuffer];
 			if (!textObservations)
-				return false;
+				return;
 
+			// Calculating the overall confidence
 			CGFloat currentConfidence = 0.0;
 			NSString* recognizedText = NSString.string;
 			for (VNRecognizedTextObservation* observation in textObservations)
@@ -194,6 +218,7 @@
 				}
 			}
 
+			// Check if the text is matching any screen specified by the user
 			result = [self checkForMatches:[recognizedText lowercaseString] checkBox:checkBox];
 			if (result != -1 && screenConfigs[result].matchingStrings.count != 0)
 			{
@@ -213,7 +238,7 @@
 		if (topConfidenceScaleFactor)
 			*topConfidenceScaleFactor = topConfidenceScalingFactor;
 		*textBuffer = strdup(bestRecognizedText.UTF8String);
-		return result;
+		*detectedScreenName = strdup(screenConfigs[result].screenName.UTF8String);
 	}
 }
 
@@ -236,9 +261,11 @@ static BootScreenConfig* newBootScreenConfig()
 	return bsc;
 }
 
-static int detectScreenFromImage(OCRImpl* impl, const char* imagePath, double refScaleFactor, char** bestRecognizedText, char** errorBuffer, double* topConfidenceScaleFactor)
+static void detectScreenFromImage(OCRImpl* impl, const char* imagePath, double refScaleFactor, 
+			char** bestRecognizedText, char** errorBuffer, double* topConfidenceScaleFactor, char** detectedScreenName)
 {
-	return [impl detectScreenFrom:imagePath ScaleFactor:refScaleFactor BestRecognizedText:bestRecognizedText ErrorBuffer:errorBuffer TopScaleFactor:topConfidenceScaleFactor];
+	return [impl detectScreenFrom:imagePath ScaleFactor:refScaleFactor BestRecognizedText:bestRecognizedText 
+						ErrorBuffer:errorBuffer TopScaleFactor:topConfidenceScaleFactor Result:detectedScreenName];
 }
 
 static void addMatchingString(BootScreenConfig *config, const char* mStr)
@@ -246,9 +273,19 @@ static void addMatchingString(BootScreenConfig *config, const char* mStr)
 	[config addMatchingString:mStr];
 }
 
+static void setScreenName(BootScreenConfig *config, const char* screenName)
+{
+	[config setScreenName:screenName];
+}
+
 static void addBootScreenConfig(OCRImpl* impl, BootScreenConfig* config)
 {
 	[impl addBootScreenConfig:config];
+}
+
+static void deleteBootScreenConfig(OCRImpl* impl, char* screenName)
+{
+	[impl deleteBootScreenConfig:screenName];
 }
 
 #ifdef __cplusplus
