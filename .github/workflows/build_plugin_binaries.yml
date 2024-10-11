@@ -13,7 +13,7 @@ jobs:
     defaults:
       run:
         working-directory: ~/go/src/github.com/Parallels/packer-plugin-parallels
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     container:
       image: docker.mirror.hashicorp.services/cimg/go:1.18
     steps:
