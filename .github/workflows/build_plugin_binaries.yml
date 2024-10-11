@@ -21,8 +21,4 @@ jobs:
       - uses: './.github/actions/build-and-persist-plugin-binary'
         with:
           GOOS: darwin
-          GOARCH: amd64
-      - uses: './.github/actions/build-and-persist-plugin-binary'
-        with:
-          GOOS: darwin
           GOARCH: arm64
