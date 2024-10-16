@@ -76,9 +76,9 @@ func (s *StepAttachCD) Run(ctx context.Context, state multistep.StateBag) multis
 	}
 
 	deviceRe := regexp.MustCompile(`\s+(cdrom\d+)\s+`)
-	matches := deviceRe.FindStringSubmatch(string(out))
+	matches := deviceRe.FindStringSubmatch(out)
 	if matches == nil {
-		state.Put("error", fmt.Errorf("Could not determine cdrom device name in the output: %s", string(out)))
+		state.Put("error", fmt.Errorf("Could not determine cdrom device name in the output: %s", out))
 		return multistep.ActionHalt
 	}
 
