@@ -11,6 +11,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/packer-plugin-sdk/bootcommand"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
@@ -20,7 +21,7 @@ import (
 // This step creates the virtual disk that will be used as the
 // hard drive for the virtual machine.
 type StepScreenBasedBoot struct {
-	ScreenConfigs []BootScreenConfig
+	ScreenConfigs map[string]BootScreenConfig
 	OCRLibrary    string
 	VmName        string
 	Ctx           interpolate.Context
@@ -29,7 +30,7 @@ type StepScreenBasedBoot struct {
 func (s *StepScreenBasedBoot) executeBootCommand(bootConfig bootcommand.BootConfig, ctx context.Context, state multistep.StateBag) error {
 	// Execute the boot command
 	step := StepTypeBootCommand{
-		BootWait:       bootConfig.BootWait,
+		BootWait:       -1,
 		BootCommand:    bootConfig.FlatBootCommand(),
 		HostInterfaces: []string{},
 		VMName:         s.VmName,
@@ -50,6 +51,29 @@ func (s *StepScreenBasedBoot) executeBootCommand(bootConfig bootcommand.BootConf
 	return errors.New("boot command failed")
 }
 
+func (s *StepScreenBasedBoot) captureScreen(state multistep.StateBag, windowId string, fileName string) error {
+	driver := state.Get("driver").(Driver)
+	prlctlCurrVersionStr, verErr := driver.Version()
+	if verErr != nil {
+		return verErr
+	}
+	prlctlCurrVersion, _ := version.NewVersion(prlctlCurrVersionStr)
+	v2, _ := version.NewVersion("20.0.0")
+
+	if prlctlCurrVersion.LessThan(v2) {
+		// Path to the binary you want to execute
+		binaryPath := "/usr/sbin/screencapture"
+		// Window ID option
+		windowIDOption := "-l" + fmt.Sprint(windowId)
+		// Command-line arguments to pass to the binary
+		args := []string{"-x", windowIDOption, fileName}
+		_, err := executeBinary(binaryPath, args...)
+		return err
+	} else {
+		return driver.Prlctl("capture", s.VmName, "--file", fileName)
+	}
+}
+
 func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {
 	// We don't have any screen configs, so no wasting of time here.
 	if (s.ScreenConfigs == nil) || (len(s.ScreenConfigs) == 0) {
@@ -65,27 +89,20 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 	}
 
 	ui := state.Get("ui").(packersdk.Ui)
-	// Window ID option
-	windowIDOption := "-l" + fmt.Sprint(windowId)
-	// Path to the binary you want to execute
-	binaryPath := "/usr/sbin/screencapture"
 	// Create a temporary file to store the screenshot
 	file, err := os.CreateTemp("", "screenshot*.png")
 	if err != nil {
 		log.Println("Error creating temporary file:", err)
 		return multistep.ActionHalt
 	}
-
 	file.Close()
 	defer os.Remove(file.Name())
-	// Command-line arguments to pass to the binary
-	args := []string{"-x", windowIDOption, file.Name()}
 
 	ui.Say("Starting screen based boot...")
 
 	prevTime := time.Now()
 	minDelay := 1 * time.Second
-	lastScreenName := ""
+	lastScreen := BootScreenConfig{}
 	ocrWrapper, _ := NewOCRWrapper(s.OCRLibrary, s.ScreenConfigs)
 	for {
 		log.Println("Checking screen...")
@@ -102,7 +119,7 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 		prevTime = time.Now()
 
 		// Capturing the screenshot
-		_, err := executeBinary(binaryPath, args...)
+		err := s.captureScreen(state, fmt.Sprint(windowId), file.Name())
 		if err != nil {
 			log.Println("Error: '", err, "' while capturing the screenshot.")
 			ui.Error("Error capturing the screenshot. Make sure you have the necessary permissions.")
@@ -115,11 +132,17 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 			return multistep.ActionHalt
 		}
 
-		if screenConfig.ScreenName == lastScreenName {
+		// If the screen is the same as the last screen and the last screen is not empty, skip the boot command
+		if screenConfig.ScreenName == lastScreen.ScreenName && len(lastScreen.MatchingStrings) > 0 {
 			continue
 		}
 
-		lastScreenName = screenConfig.ScreenName
+		// If we switched the screen & the last screen is execute only once, then remove the screen
+		if len(lastScreen.MatchingStrings) > 0 && lastScreen.ExecuteOnlyOnce {
+			ocrWrapper.RemoveBootScreenConfigIfExist(lastScreen.ScreenName)
+		}
+
+		lastScreen = screenConfig
 		ui.Say("Screen changed to " + screenConfig.ScreenName)
 		// Execute the boot command
 		bootCommand := screenConfig.FlatBootCommand()

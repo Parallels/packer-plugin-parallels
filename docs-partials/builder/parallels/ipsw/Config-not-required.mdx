@@ -4,8 +4,9 @@
   A screen is considered matched if all the matching strings are present in the screen.
   The first matching screen will be considered & boot config of that screen will be used.
   If matching strings are empty, then it is considered as empty screen,
-  which will be considered when none of the other screens are matched (You can use this screen to -
-  make system wait for some time / execute a common boot command etc.).
+  empty screen has some special meaning, which will be considered when none of the other screens are matched.
+  You can use this screen to make system wait for some time / execute a common boot command etc.
+  The empty screen boot command will be executed repeatedly until a non-empty screen is found.
   If more than one empty screen is found, then it is considered as an error.
 
 - `ocr_library` (string) - OCR library to use. Two options are currently supported: "tesseract" and "vision".

@@ -24,11 +24,11 @@ import (
 // VisionOCRWrapper is a struct that acts as an Adapter to Apple's Vision Framework for Optical Character Recognition.
 type VisionOCRWrapper struct {
 	referenceScalingFactor float32
-	ScreenConfigs          []BootScreenConfig
+	ScreenConfigs          map[string]BootScreenConfig
 	OCRImpl                *C.OCRImpl
 }
 
-func NewVisionOCRWrapper(ScreenConfigs []BootScreenConfig) *VisionOCRWrapper {
+func NewVisionOCRWrapper(ScreenConfigs map[string]BootScreenConfig) *VisionOCRWrapper {
 	ocrRunner := VisionOCRWrapper{
 		referenceScalingFactor: 0.0,
 		ScreenConfigs:          ScreenConfigs,
@@ -38,6 +38,8 @@ func NewVisionOCRWrapper(ScreenConfigs []BootScreenConfig) *VisionOCRWrapper {
 	for _, screenConfig := range ScreenConfigs {
 		bootScreenConfig := C.newBootScreenConfig()
 
+		// Add the screen name
+		C.setScreenName(bootScreenConfig, C.CString(screenConfig.ScreenName))
 		for _, matchingString := range screenConfig.MatchingStrings {
 			lowerCase := strings.ToLower(matchingString)
 			C.addMatchingString(bootScreenConfig, C.CString(lowerCase))
@@ -49,11 +51,13 @@ func NewVisionOCRWrapper(ScreenConfigs []BootScreenConfig) *VisionOCRWrapper {
 	return &ocrRunner
 }
 
-func (c *VisionOCRWrapper) detectScreenFromImageUsingVisionAPI(imagePath string, useRefScalingFactor bool, screenId chan<- int, err chan<- error) {
+func (c *VisionOCRWrapper) detectScreenFromImageUsingVisionAPI(imagePath string, useRefScalingFactor bool, screenName chan<- string, err chan<- error) {
 	errorBuffer := C.CString("")
 	defer C.free(unsafe.Pointer(errorBuffer))
 	textBuffer := C.CString("")
 	defer C.free(unsafe.Pointer(textBuffer))
+	detectedScreenName := C.CString("")
+	defer C.free(unsafe.Pointer(detectedScreenName))
 
 	refScalingFactor := C.double(0.0)
 	if useRefScalingFactor {
@@ -61,9 +65,11 @@ func (c *VisionOCRWrapper) detectScreenFromImageUsingVisionAPI(imagePath string,
 	}
 
 	bestScalingFactor := C.double(0.0)
-	result := C.detectScreenFromImage(c.OCRImpl, C.CString(imagePath), refScalingFactor, &textBuffer, &errorBuffer, &bestScalingFactor)
-	if result == -1 {
-		screenId <- -1
+
+	C.detectScreenFromImage(c.OCRImpl, C.CString(imagePath), refScalingFactor, &textBuffer, &errorBuffer, &bestScalingFactor, &detectedScreenName)
+	result := C.GoString(detectedScreenName)
+	if len(result) == 0 {
+		screenName <- ""
 		err <- errors.New(C.GoString(errorBuffer))
 		return
 	}
@@ -74,7 +80,7 @@ func (c *VisionOCRWrapper) detectScreenFromImageUsingVisionAPI(imagePath string,
 		log.Printf("Best detected text: %s", C.GoString(textBuffer))
 	}
 
-	screenId <- int(result)
+	screenName <- result
 	err <- nil
 }
 
@@ -87,18 +93,24 @@ func (c *VisionOCRWrapper) IdentifyCurrentScreen(imagePath string) (bootScreenCo
 
 	for {
 		// Use Vision Framework for OCR
-		chanScreenId := make(chan int)
+		chanScreenName := make(chan string)
 		chanErr := make(chan error)
-		go c.detectScreenFromImageUsingVisionAPI(imagePath, useRefScalingFactor, chanScreenId, chanErr)
-		screenId := <-chanScreenId
+		go c.detectScreenFromImageUsingVisionAPI(imagePath, useRefScalingFactor, chanScreenName, chanErr)
+		screenName := <-chanScreenName
 		err := <-chanErr
 
-		if err != nil || screenId == -1 {
-			fmt.Println("Error:", err)
+		fmt.Println("Detected screen name", screenName)
+		if err != nil || len(screenName) == 0 {
+			fmt.Println("Screen not detected (error if any:", err, ")")
 			return BootScreenConfig{}, err
 		}
 
-		screenConfig = c.ScreenConfigs[screenId]
+		exists := false
+		screenConfig, exists = c.ScreenConfigs[screenName]
+		if !exists {
+			return BootScreenConfig{}, errors.New("detected screen not found in the configuration, please report this bug")
+		}
+
 		// Did we detect an empty screen ? Try again without scaling factor to be sure
 		if useRefScalingFactor && (screenConfig.MatchingStrings == nil || len(screenConfig.MatchingStrings) == 0) {
 			useRefScalingFactor = false
@@ -107,5 +119,10 @@ func (c *VisionOCRWrapper) IdentifyCurrentScreen(imagePath string) (bootScreenCo
 		}
 	}
 
+	fmt.Println("Detected screen name 2", screenConfig.ScreenName)
 	return screenConfig, nil
+}
+
+func (c *VisionOCRWrapper) RemoveBootScreenConfigIfExist(screenName string) {
+	C.deleteBootScreenConfig(c.OCRImpl, C.CString(screenName))
 }

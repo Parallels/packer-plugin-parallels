@@ -34,8 +34,9 @@ type Config struct {
 	// A screen is considered matched if all the matching strings are present in the screen.
 	// The first matching screen will be considered & boot config of that screen will be used.
 	// If matching strings are empty, then it is considered as empty screen,
-	// which will be considered when none of the other screens are matched (You can use this screen to -
-	// make system wait for some time / execute a common boot command etc.).
+	// empty screen has some special meaning, which will be considered when none of the other screens are matched.
+	// You can use this screen to make system wait for some time / execute a common boot command etc.
+	// The empty screen boot command will be executed repeatedly until a non-empty screen is found.
 	// If more than one empty screen is found, then it is considered as an error.
 	BootScreenConfig parallelscommon.BootScreensConfig `mapstructure:"boot_screen_config" required:"false"`
 	// OCR library to use. Two options are currently supported: "tesseract" and "vision".
@@ -57,7 +58,8 @@ type Config struct {
 	// by Parallels. Defaults to "false".
 	ReassignMAC bool `mapstructure:"reassign_mac" required:"false"`
 
-	ctx interpolate.Context
+	ctx              interpolate.Context
+	screenConfigsMap map[string]parallelscommon.BootScreenConfig
 }
 
 func (c *Config) Prepare(raws ...interface{}) ([]string, error) {
@@ -95,11 +97,23 @@ func (c *Config) Prepare(raws ...interface{}) ([]string, error) {
 	fmt.Fprintln(os.Stderr, "Screen count is : ", len(c.BootScreenConfig))
 
 	emptyScreenCount := 0
+	c.screenConfigsMap = make(map[string]parallelscommon.BootScreenConfig)
 	for _, screenConfig := range c.BootScreenConfig {
 		errs = packersdk.MultiErrorAppend(errs, screenConfig.Prepare(&c.ctx)...)
 		if len(screenConfig.MatchingStrings) == 0 {
 			emptyScreenCount++
 		}
+
+		if screenConfig.ScreenName == "" {
+			errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("screen_name should not be empty"))
+			continue
+		}
+
+		if _, exists := c.screenConfigsMap[screenConfig.ScreenName]; exists {
+			errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("multiple screens with same name: %s", screenConfig.ScreenName))
+			continue
+		}
+		c.screenConfigsMap[screenConfig.ScreenName] = screenConfig
 	}
 
 	if emptyScreenCount > 1 {
