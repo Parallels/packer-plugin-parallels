@@ -22,6 +22,9 @@ type FlatConfig struct {
 	FloppyDirectories         []string          `mapstructure:"floppy_dirs" cty:"floppy_dirs" hcl:"floppy_dirs"`
 	FloppyContent             map[string]string `mapstructure:"floppy_content" cty:"floppy_content" hcl:"floppy_content"`
 	FloppyLabel               *string           `mapstructure:"floppy_label" cty:"floppy_label" hcl:"floppy_label"`
+	CDFiles                   []string          `mapstructure:"cd_files" cty:"cd_files" hcl:"cd_files"`
+	CDContent                 map[string]string `mapstructure:"cd_content" cty:"cd_content" hcl:"cd_content"`
+	CDLabel                   *string           `mapstructure:"cd_label" cty:"cd_label" hcl:"cd_label"`
 	OutputDir                 *string           `mapstructure:"output_directory" required:"false" cty:"output_directory" hcl:"output_directory"`
 	Prlctl                    [][]string        `mapstructure:"prlctl" required:"false" cty:"prlctl" hcl:"prlctl"`
 	PrlctlPost                [][]string        `mapstructure:"prlctl_post" required:"false" cty:"prlctl_post" hcl:"prlctl_post"`
@@ -113,6 +116,9 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"floppy_dirs":                  &hcldec.AttrSpec{Name: "floppy_dirs", Type: cty.List(cty.String), Required: false},
 		"floppy_content":               &hcldec.AttrSpec{Name: "floppy_content", Type: cty.Map(cty.String), Required: false},
 		"floppy_label":                 &hcldec.AttrSpec{Name: "floppy_label", Type: cty.String, Required: false},
+		"cd_files":                     &hcldec.AttrSpec{Name: "cd_files", Type: cty.List(cty.String), Required: false},
+		"cd_content":                   &hcldec.AttrSpec{Name: "cd_content", Type: cty.Map(cty.String), Required: false},
+		"cd_label":                     &hcldec.AttrSpec{Name: "cd_label", Type: cty.String, Required: false},
 		"output_directory":             &hcldec.AttrSpec{Name: "output_directory", Type: cty.String, Required: false},
 		"prlctl":                       &hcldec.AttrSpec{Name: "prlctl", Type: cty.List(cty.List(cty.String)), Required: false},
 		"prlctl_post":                  &hcldec.AttrSpec{Name: "prlctl_post", Type: cty.List(cty.List(cty.String)), Required: false},

@@ -36,6 +36,7 @@ type Config struct {
 	commonsteps.HTTPConfig              `mapstructure:",squash"`
 	commonsteps.ISOConfig               `mapstructure:",squash"`
 	commonsteps.FloppyConfig            `mapstructure:",squash"`
+	commonsteps.CDConfig                `mapstructure:",squash"`
 	bootcommand.BootConfig              `mapstructure:",squash"`
 	parallelscommon.OutputConfig        `mapstructure:",squash"`
 	parallelscommon.HWConfig            `mapstructure:",squash"`
@@ -214,6 +215,10 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			Directories: b.config.FloppyConfig.FloppyDirectories,
 			Label:       b.config.FloppyConfig.FloppyLabel,
 		},
+		&commonsteps.StepCreateCD{
+			Files:   b.config.CDConfig.CDFiles,
+			Content: b.config.CDConfig.CDContent,
+		},
 		commonsteps.HTTPServerFromHTTPConfig(&b.config.HTTPConfig),
 		new(stepCreateVM),
 		new(stepCreateDisk),
@@ -223,6 +228,7 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			ParallelsToolsMode: b.config.ParallelsToolsMode,
 		},
 		new(parallelscommon.StepAttachFloppy),
+		new(parallelscommon.StepAttachCD),
 		&parallelscommon.StepPrlctl{
 			Commands: b.config.Prlctl,
 			Ctx:      b.config.ctx,
