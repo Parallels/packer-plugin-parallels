@@ -3,9 +3,10 @@ on:
   push:
     branches:
       - main
+  pull_request:
 jobs:
   ensure-docs-compiled:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Checkout 🛎
         uses: actions/checkout@v2
