@@ -76,6 +76,8 @@ func (d *DriverMock) DeviceAddCDROM(name string, image string) (string, error) {
 	d.DeviceAddCDROMCalled = true
 	d.DeviceAddCDROMName = name
 	d.DeviceAddCDROMImage = image
+	d.DeviceAddCDROMResult = "cdrom0"
+	d.DeviceAddCDROMErr = nil
 	return d.DeviceAddCDROMResult, d.DeviceAddCDROMErr
 }
 

@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"regexp"
 
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
@@ -23,7 +22,6 @@ import (
 //
 // Produces:
 type StepAttachCD struct {
-	cdRomType   string
 	cdPath      string
 	cdromDevice string
 }
@@ -45,45 +43,16 @@ func (s *StepAttachCD) Run(ctx context.Context, state multistep.StateBag) multis
 	vmName := state.Get("vmName").(string)
 
 	ui.Say("Attaching cd...")
-	//Use CLI instead of driver wrapper so we can control iface
-	//Also the cli lets us get back the cdrom device for cleanup
-	/*// Attaching the cd using the driver instead of cli
+	// Attaching the cd using the driver
 	cdrom, err := driver.DeviceAddCDROM(vmName, cdPath)
 	if err != nil {
-		err = fmt.Errorf("Error attaching cd: %s", err)
+		err = fmt.Errorf("error attaching cd: %s", err)
 		state.Put("error", err)
 		ui.Error(err.Error())
 		return multistep.ActionHalt
 	}
 	// Track the device name so that we can can delete later
-	s.cdromDevice = cdrom*/
-
-	//Attaching the cd using the cli
-	// just force sata for now and don't let people choose
-	s.cdRomType = "sata"
-	command := []string{
-		"set", vmName,
-		"--device-add", "cdrom",
-		"--image", cdPath,
-		"--iface", s.cdRomType,
-		"--enable", "--connect",
-	}
-
-	out, err := driver.PrlctlGet(command...)
-	if err != nil {
-		state.Put("error", fmt.Errorf("Error adding cd: %s", err))
-		return multistep.ActionHalt
-	}
-
-	deviceRe := regexp.MustCompile(`\s+(cdrom\d+)\s+`)
-	matches := deviceRe.FindStringSubmatch(out)
-	if matches == nil {
-		state.Put("error", fmt.Errorf("Could not determine cdrom device name in the output: %s", out))
-		return multistep.ActionHalt
-	}
-
-	deviceName := matches[1]
-	s.cdromDevice = deviceName
+	s.cdromDevice = cdrom
 
 	return multistep.ActionContinue
 }
