@@ -23,7 +23,7 @@ import (
 //
 // Produces:
 type StepAttachCD struct {
-	cdRomType   string `mapstructure:"cdrom_type"`
+	cdRomType   string
 	cdPath      string
 	cdromDevice string
 }
