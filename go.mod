@@ -6,7 +6,7 @@ require (
 	github.com/ChrisTrenkamp/goxpath v0.0.0-20210404020558-97928f7e12b6
 	github.com/hashicorp/go-version v1.7.0
 	github.com/hashicorp/hcl/v2 v2.20.1
-	github.com/hashicorp/packer-plugin-sdk v0.5.4
+	github.com/hashicorp/packer-plugin-sdk v0.5.5-0.20240715190433-28e1cb00bc48
 	github.com/zclconf/go-cty v1.13.3
 )
 
@@ -76,6 +76,8 @@ require (
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/ugorji/go/codec v1.2.6 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
+	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
+	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
