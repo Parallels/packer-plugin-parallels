@@ -238,7 +238,9 @@
 		if (topConfidenceScaleFactor)
 			*topConfidenceScaleFactor = topConfidenceScalingFactor;
 		*textBuffer = strdup(bestRecognizedText.UTF8String);
-		*detectedScreenName = strdup(screenConfigs[result].screenName.UTF8String);
+
+		if (result != -1)
+			*detectedScreenName = strdup(screenConfigs[result].screenName.UTF8String);
 	}
 }
 
