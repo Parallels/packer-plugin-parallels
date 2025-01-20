@@ -15,7 +15,6 @@ import "C"
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"strings"
 	"unsafe"
@@ -68,9 +67,11 @@ func (c *VisionOCRWrapper) detectScreenFromImageUsingVisionAPI(imagePath string,
 
 	C.detectScreenFromImage(c.OCRImpl, C.CString(imagePath), refScalingFactor, &textBuffer, &errorBuffer, &bestScalingFactor, &detectedScreenName)
 	result := C.GoString(detectedScreenName)
-	if len(result) == 0 {
-		screenName <- ""
-		err <- errors.New(C.GoString(errorBuffer))
+	errorString := C.GoString(errorBuffer)
+
+	if len(errorString) != 0 {
+		screenName <- result
+		err <- errors.New(errorString)
 		return
 	}
 	c.referenceScalingFactor = float32(bestScalingFactor)
@@ -99,10 +100,19 @@ func (c *VisionOCRWrapper) IdentifyCurrentScreen(imagePath string) (bootScreenCo
 		screenName := <-chanScreenName
 		err := <-chanErr
 
-		fmt.Println("Detected screen name", screenName)
-		if err != nil || len(screenName) == 0 {
-			fmt.Println("Screen not detected (error if any:", err, ")")
+		log.Printf("Detected screen name : '%s'", screenName)
+		if err != nil {
+			log.Printf("Screen detection error : %s", err)
 			return BootScreenConfig{}, err
+		}
+
+		if len(screenName) == 0 {
+			if useRefScalingFactor { // Didn't match any screen, try again without scaling factor
+				useRefScalingFactor = false
+				continue
+			} else {
+				return BootScreenConfig{}, errors.New("unable to detect screen")
+			}
 		}
 
 		exists := false
@@ -112,14 +122,18 @@ func (c *VisionOCRWrapper) IdentifyCurrentScreen(imagePath string) (bootScreenCo
 		}
 
 		// Did we detect an empty screen ? Try again without scaling factor to be sure
-		if useRefScalingFactor && (screenConfig.MatchingStrings == nil || len(screenConfig.MatchingStrings) == 0) {
+		if useRefScalingFactor && len(screenConfig.MatchingStrings) == 0 {
 			useRefScalingFactor = false
 		} else {
+			if len(screenName) == 0 {
+				return BootScreenConfig{}, errors.New("unable to detect screen")
+			}
+
 			break
 		}
 	}
 
-	fmt.Println("Detected screen name 2", screenConfig.ScreenName)
+	log.Printf("Final detected screen name : %s ", screenConfig.ScreenName)
 	return screenConfig, nil
 }
 
