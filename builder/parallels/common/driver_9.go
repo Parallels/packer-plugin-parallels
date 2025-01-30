@@ -23,48 +23,42 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/tmp"
 )
 
-// Struct to format Scancodes in JSON
-type ScanCodes struct {
-	Scancode int64  `json:"scancode"`
-	Event    string `json:"event"`
-	Delay    int    `json:"delay"`
+// Struct to format keyCodes in JSON
+type keyCodes struct {
+	KeyCode int    `json:"key"`
+	Event   string `json:"event"`
+	Delay   int    `json:"delay"`
 }
 
 // sending scancodes to VM via prlctl send-key-event CMD
 func (d *Parallels9Driver) sendJsonScancodes(vmName string, inputScanCodes []string) error {
-	scancodeData := []ScanCodes{}
 
 	log.Println("scancodes received for JSON encoding ", inputScanCodes)
 	delay := 100
-	for i := 0; i < len(inputScanCodes); i++ {
-		key1, convErr_ := strconv.ParseInt(inputScanCodes[i], 16, 64)
-		if convErr_ != nil {
-			log.Println(convErr_, "conversion error for %s", inputScanCodes[i])
-			return convErr_
-		}
-
+	var inputHexScanCodes []uint
+	for _, hexStr := range inputScanCodes {
+		var val uint
+		fmt.Sscanf(hexStr, "%X", &val) // Convert hex string to uint
+		inputHexScanCodes = append(inputHexScanCodes, val)
+	}
+	keyCodeData := []keyCodes{}
+	for i := 0; i < len(inputHexScanCodes); i++ {
+		key1 := inputHexScanCodes[i]
 		if key1 == 224 {
-			key2, convErr_ := strconv.ParseInt(inputScanCodes[i+1], 16, 64)
+			key2 := inputHexScanCodes[i+1]
 			i = i + 1
-			if convErr_ != nil {
-				log.Println(convErr_, "conversion error for %s", inputScanCodes[i])
-				return convErr_
-			}
 			if key2 < 128 {
-				scancodeData = append(scancodeData, ScanCodes{Scancode: key1, Event: "press", Delay: delay})
-				scancodeData = append(scancodeData, ScanCodes{Scancode: key2, Event: "press", Delay: delay})
+				keyCodeData = append(keyCodeData, keyCodes{KeyCode: getKeycodeFromScanCode([]uint{key1, key2}), Event: "press", Delay: delay})
 			} else {
-				scancodeData = append(scancodeData, ScanCodes{Scancode: key1, Event: "release", Delay: delay})
-				scancodeData = append(scancodeData, ScanCodes{Scancode: key2 - 128, Event: "release", Delay: delay})
+				keyCodeData = append(keyCodeData, keyCodes{KeyCode: getKeycodeFromScanCode([]uint{key1, key2 - 128}), Event: "release", Delay: delay})
 			}
 		} else if key1 < 128 {
-			scancodeData = append(scancodeData, ScanCodes{Scancode: key1, Event: "press", Delay: delay})
+			keyCodeData = append(keyCodeData, keyCodes{KeyCode: getKeycodeFromScanCode([]uint{key1}), Event: "press", Delay: delay})
 		} else {
-			scancodeData = append(scancodeData, ScanCodes{Scancode: key1 - 128, Event: "release", Delay: delay})
+			keyCodeData = append(keyCodeData, keyCodes{KeyCode: getKeycodeFromScanCode([]uint{key1 - 128}), Event: "release", Delay: delay})
 		}
 	}
-
-	jsonFormat, err := json.MarshalIndent(scancodeData, "", "\t")
+	jsonFormat, err := json.MarshalIndent(keyCodeData, "", "\t")
 	if err != nil {
 		log.Println(err)
 		return err
