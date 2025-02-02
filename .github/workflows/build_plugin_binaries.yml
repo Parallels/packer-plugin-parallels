@@ -1,7 +1,7 @@
 # Copyright (c) HashiCorp, Inc.
 # SPDX-License-Identifier: MPL-2.0
 
-name: hashicorp/packer-plugin-parallels/build_plugin_binaries
+name: Stromweld/packer-plugin-parallels/build_plugin_binaries
 permissions:
   contents: read
 on:
@@ -12,7 +12,7 @@ jobs:
   build_darwin:
     defaults:
       run:
-        working-directory: ~/go/src/github.com/Parallels/packer-plugin-parallels
+        working-directory: ~/go/src/github.com/Stromweld/packer-plugin-parallels
     runs-on: ubuntu-latest
     container:
       image: docker.mirror.hashicorp.services/cimg/go:1.21
