@@ -18,6 +18,8 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/template/interpolate"
 )
 
+const macScreenCaptureBinaryPath = "/usr/sbin/screencapture"
+
 // This step creates the virtual disk that will be used as the
 // hard drive for the virtual machine.
 type StepScreenBasedBoot struct {
@@ -51,27 +53,25 @@ func (s *StepScreenBasedBoot) executeBootCommand(bootConfig bootcommand.BootConf
 	return errors.New("boot command failed")
 }
 
-func (s *StepScreenBasedBoot) captureScreen(state multistep.StateBag, windowId string, fileName string) error {
+func (s *StepScreenBasedBoot) captureScreenPD(state multistep.StateBag, fileName string) error {
 	driver := state.Get("driver").(Driver)
-	prlctlCurrVersionStr, verErr := driver.Version()
-	if verErr != nil {
-		return verErr
-	}
-	prlctlCurrVersion, _ := version.NewVersion(prlctlCurrVersionStr)
-	v2, _ := version.NewVersion("20.0.0")
+	return driver.Prlctl("capture", s.VmName, "--file", fileName)
+}
 
-	if prlctlCurrVersion.LessThan(v2) {
-		// Path to the binary you want to execute
-		binaryPath := "/usr/sbin/screencapture"
-		// Window ID option
-		windowIDOption := "-l" + fmt.Sprint(windowId)
-		// Command-line arguments to pass to the binary
-		args := []string{"-x", windowIDOption, fileName}
-		_, err := executeBinary(binaryPath, args...)
-		return err
-	} else {
-		return driver.Prlctl("capture", s.VmName, "--file", fileName)
+func (s *StepScreenBasedBoot) captureScreenMac(windowId string, fileName string) error {
+	// Window ID option
+	windowIDOption := "-l" + fmt.Sprint(windowId)
+	// Command-line arguments to pass to the binary
+	args := []string{"-x", windowIDOption, fileName}
+	_, err := executeBinary(macScreenCaptureBinaryPath, args...)
+	return err
+}
+
+func (s *StepScreenBasedBoot) captureScreen(state multistep.StateBag, windowId string, fileName string) error {
+	if windowId == "-1" { // PD version is above 20.0.0
+		return s.captureScreenPD(state, fileName)
 	}
+	return s.captureScreenMac(windowId, fileName)
 }
 
 func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag) multistep.StepAction {
@@ -80,12 +80,26 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 		return multistep.ActionContinue
 	}
 
-	// Retrieve the window ID
-	windowIDDetector := WindowIDDetector{}
-	windowId, err := windowIDDetector.DetectWindowId(s.VmName, state)
-	if err != nil || windowId == 0 {
-		log.Println("Error retrieving window ID:", err)
+	driver := state.Get("driver").(Driver)
+	prlctlCurrVersionStr, verErr := driver.Version()
+	if verErr != nil {
+		log.Println("Error retrieving prlctl version:", verErr)
 		return multistep.ActionHalt
+	}
+	prlctlCurrVersion, _ := version.NewVersion(prlctlCurrVersionStr)
+	v2, _ := version.NewVersion("20.0.0")
+
+	// From PD20.0.0, 'prlctl capture' command is available for macOS VMs
+	windowId := -1
+	if prlctlCurrVersion.LessThan(v2) {
+		// Retrieve the window ID
+		windowIDDetector := WindowIDDetector{}
+		var err error
+		windowId, err = windowIDDetector.DetectWindowId(s.VmName, state)
+		if err != nil || windowId == 0 {
+			log.Println("Error retrieving window ID:", err)
+			return multistep.ActionHalt
+		}
 	}
 
 	ui := state.Get("ui").(packersdk.Ui)
