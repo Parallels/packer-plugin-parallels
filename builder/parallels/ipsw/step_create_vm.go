@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	parallelscommon "github.com/Parallels/packer-plugin-parallels/builder/parallels/common"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/packer-plugin-sdk/multistep"
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
 )
@@ -66,15 +67,24 @@ func (s *stepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 		return multistep.ActionHalt
 	}
 
-	// Temporary workaround
-	// Currently it is not possible to retrieve window ID of the MacOS VM when it is in headless mode
-	// So, we are setting the VM to window mode after setting the default configuration
-	command := []string{"set", name, "--startup-view", "window"}
-	if err := driver.Prlctl(command...); err != nil {
-		err := fmt.Errorf("Error setting VM to window mode: %s", err)
-		state.Put("error", err)
-		ui.Error(err.Error())
+	prlctlCurrVersionStr, verErr := driver.Version()
+	if verErr != nil {
 		return multistep.ActionHalt
+	}
+	prlctlCurrVersion, _ := version.NewVersion(prlctlCurrVersionStr)
+	v2, _ := version.NewVersion("20.0.0")
+
+	if prlctlCurrVersion.LessThan(v2) {
+		// workaround when prlctl capture is not available
+		// Currently it is not possible to retrieve window ID of the MacOS VM when it is in headless mode
+		// So, we are setting the VM to window mode after setting the default configuration
+		command := []string{"set", name, "--startup-view", "window"}
+		if err := driver.Prlctl(command...); err != nil {
+			err := fmt.Errorf("error setting VM to window mode: %s", err)
+			state.Put("error", err)
+			ui.Error(err.Error())
+			return multistep.ActionHalt
+		}
 	}
 
 	// Set the VM name property on the first command

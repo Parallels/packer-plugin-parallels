@@ -70,6 +70,9 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			OutputDir:   b.config.OutputDir,
 			ReassignMAC: b.config.ReassignMAC,
 		},
+		&parallelscommon.StepApplyVMConfig{
+			CustomVMConfig: b.config.VMConfig,
+		},
 		&parallelscommon.StepPrlctl{
 			Commands: b.config.Prlctl,
 			Ctx:      b.config.ctx,

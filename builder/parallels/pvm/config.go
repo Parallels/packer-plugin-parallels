@@ -33,6 +33,7 @@ type Config struct {
 	shutdowncommand.ShutdownConfig      `mapstructure:",squash"`
 	bootcommand.BootConfig              `mapstructure:",squash"`
 	parallelscommon.ToolsConfig         `mapstructure:",squash"`
+	parallelscommon.VMConfig            `mapstructure:",squash"`
 	// The path to a PVM directory that acts as the source
 	// of this build.
 	SourcePath string `mapstructure:"source_path" required:"true"`
@@ -87,6 +88,7 @@ func (c *Config) Prepare(raws ...interface{}) ([]string, error) {
 	errs = packersdk.MultiErrorAppend(errs, c.ShutdownConfig.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.SSHConfig.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.ToolsConfig.Prepare(&c.ctx)...)
+	errs = packersdk.MultiErrorAppend(errs, c.VMConfig.Prepare(&c.ctx)...)
 
 	if c.SourcePath == "" {
 		errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("source_path is required"))

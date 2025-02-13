@@ -102,6 +102,8 @@ type FlatConfig struct {
 	ParallelsToolsFlavor      *string           `mapstructure:"parallels_tools_flavor" required:"true" cty:"parallels_tools_flavor" hcl:"parallels_tools_flavor"`
 	ParallelsToolsGuestPath   *string           `mapstructure:"parallels_tools_guest_path" required:"false" cty:"parallels_tools_guest_path" hcl:"parallels_tools_guest_path"`
 	ParallelsToolsMode        *string           `mapstructure:"parallels_tools_mode" required:"false" cty:"parallels_tools_mode" hcl:"parallels_tools_mode"`
+	StartupView               *string           `mapstructure:"startup_view" required:"false" cty:"startup_view" hcl:"startup_view"`
+	OnWindowClose             *string           `mapstructure:"on_window_close" required:"false" cty:"on_window_close" hcl:"on_window_close"`
 	DiskSize                  *uint             `mapstructure:"disk_size" required:"false" cty:"disk_size" hcl:"disk_size"`
 	DiskType                  *string           `mapstructure:"disk_type" required:"false" cty:"disk_type" hcl:"disk_type"`
 	GuestOSType               *string           `mapstructure:"guest_os_type" required:"false" cty:"guest_os_type" hcl:"guest_os_type"`
@@ -215,6 +217,8 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"parallels_tools_flavor":       &hcldec.AttrSpec{Name: "parallels_tools_flavor", Type: cty.String, Required: false},
 		"parallels_tools_guest_path":   &hcldec.AttrSpec{Name: "parallels_tools_guest_path", Type: cty.String, Required: false},
 		"parallels_tools_mode":         &hcldec.AttrSpec{Name: "parallels_tools_mode", Type: cty.String, Required: false},
+		"startup_view":                 &hcldec.AttrSpec{Name: "startup_view", Type: cty.String, Required: false},
+		"on_window_close":              &hcldec.AttrSpec{Name: "on_window_close", Type: cty.String, Required: false},
 		"disk_size":                    &hcldec.AttrSpec{Name: "disk_size", Type: cty.Number, Required: false},
 		"disk_type":                    &hcldec.AttrSpec{Name: "disk_type", Type: cty.String, Required: false},
 		"guest_os_type":                &hcldec.AttrSpec{Name: "guest_os_type", Type: cty.String, Required: false},

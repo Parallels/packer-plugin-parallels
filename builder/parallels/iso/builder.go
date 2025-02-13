@@ -46,6 +46,7 @@ type Config struct {
 	shutdowncommand.ShutdownConfig      `mapstructure:",squash"`
 	parallelscommon.SSHConfig           `mapstructure:",squash"`
 	parallelscommon.ToolsConfig         `mapstructure:",squash"`
+	parallelscommon.VMConfig            `mapstructure:",squash"`
 	// The size, in megabytes, of the hard disk to create
 	// for the VM. By default, this is 40000 (about 40 GB).
 	DiskSize uint `mapstructure:"disk_size" required:"false"`
@@ -129,6 +130,7 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
 	errs = packersdk.MultiErrorAppend(errs, b.config.SSHConfig.Prepare(&b.config.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, b.config.ToolsConfig.Prepare(&b.config.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, b.config.BootConfig.Prepare(&b.config.ctx)...)
+	errs = packersdk.MultiErrorAppend(errs, b.config.VMConfig.Prepare(&b.config.ctx)...)
 
 	if b.config.DiskSize == 0 {
 		b.config.DiskSize = 40000
@@ -229,6 +231,9 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		},
 		new(parallelscommon.StepAttachFloppy),
 		new(parallelscommon.StepAttachCD),
+		&parallelscommon.StepApplyVMConfig{
+			CustomVMConfig: b.config.VMConfig,
+		},
 		&parallelscommon.StepPrlctl{
 			Commands: b.config.Prlctl,
 			Ctx:      b.config.ctx,

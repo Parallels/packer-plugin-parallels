@@ -43,6 +43,7 @@ type Config struct {
 	parallelscommon.PrlctlVersionConfig `mapstructure:",squash"`
 	shutdowncommand.ShutdownConfig      `mapstructure:",squash"`
 	parallelscommon.SSHConfig           `mapstructure:",squash"`
+	parallelscommon.VMConfig            `mapstructure:",squash"`
 
 	// Screens and it's boot configs
 	// A screen is considered matched if all the matching strings are present in the screen.
@@ -120,6 +121,7 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
 	errs = packersdk.MultiErrorAppend(errs, b.config.ShutdownConfig.Prepare(&b.config.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, b.config.SSHConfig.Prepare(&b.config.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, b.config.BootConfig.Prepare(&b.config.ctx)...)
+	errs = packersdk.MultiErrorAppend(errs, b.config.VMConfig.Prepare(&b.config.ctx)...)
 
 	if b.config.DiskSize == 0 {
 		b.config.DiskSize = 40000
@@ -176,6 +178,12 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, []string, error) {
 		errs = packersdk.MultiErrorAppend(errs, fmt.Errorf("invalid ocr_library: %s", b.config.OCRLibrary))
 	}
 
+	if b.config.StartupView == "coherence" || b.config.StartupView == "fullscreen" || b.config.StartupView == "modality" {
+		errs = packersdk.MultiErrorAppend(errs,
+			fmt.Errorf("invalid value for startup-view (not supported for macOS VMs): %s. Allowed values are : same, window, headless",
+				b.config.StartupView))
+	}
+
 	if errs != nil && len(errs.Errors) > 0 {
 		return nil, warnings, errs
 	}
@@ -206,6 +214,9 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		commonsteps.HTTPServerFromHTTPConfig(&b.config.HTTPConfig),
 		new(stepCreateVM),
 		new(stepCreateDisk),
+		&parallelscommon.StepApplyVMConfig{
+			CustomVMConfig: b.config.VMConfig,
+		},
 		&parallelscommon.StepPrlctl{
 			Commands: b.config.Prlctl,
 			Ctx:      b.config.ctx,

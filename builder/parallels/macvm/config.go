@@ -29,6 +29,7 @@ type Config struct {
 	parallelscommon.SSHConfig           `mapstructure:",squash"`
 	shutdowncommand.ShutdownConfig      `mapstructure:",squash"`
 	bootcommand.BootConfig              `mapstructure:",squash"`
+	parallelscommon.VMConfig            `mapstructure:",squash"`
 
 	// Screens and it's boot configs
 	// A screen is considered matched if all the matching strings are present in the screen.
@@ -93,6 +94,7 @@ func (c *Config) Prepare(raws ...interface{}) ([]string, error) {
 	errs = packersdk.MultiErrorAppend(errs, c.BootConfig.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.ShutdownConfig.Prepare(&c.ctx)...)
 	errs = packersdk.MultiErrorAppend(errs, c.SSHConfig.Prepare(&c.ctx)...)
+	errs = packersdk.MultiErrorAppend(errs, c.VMConfig.Prepare(&c.ctx)...)
 
 	fmt.Fprintln(os.Stderr, "Screen count is : ", len(c.BootScreenConfig))
 
@@ -142,6 +144,12 @@ func (c *Config) Prepare(raws ...interface{}) ([]string, error) {
 		warnings = append(warnings,
 			"A shutdown_command was not specified. Without a shutdown command, Packer\n"+
 				"will forcibly halt the virtual machine, which may result in data loss.")
+	}
+
+	if c.StartupView == "coherence" || c.StartupView == "fullscreen" || c.StartupView == "modality" {
+		errs = packersdk.MultiErrorAppend(errs,
+			fmt.Errorf("invalid value for startup-view (not supported for macOS VMs): %s. Allowed values are : same, window, headless",
+				c.StartupView))
 	}
 
 	// Check for any errors.
