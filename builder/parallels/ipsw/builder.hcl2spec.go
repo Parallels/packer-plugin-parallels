@@ -88,6 +88,8 @@ type FlatConfig struct {
 	WinRMUseSSL               *bool                         `mapstructure:"winrm_use_ssl" cty:"winrm_use_ssl" hcl:"winrm_use_ssl"`
 	WinRMInsecure             *bool                         `mapstructure:"winrm_insecure" cty:"winrm_insecure" hcl:"winrm_insecure"`
 	WinRMUseNTLM              *bool                         `mapstructure:"winrm_use_ntlm" cty:"winrm_use_ntlm" hcl:"winrm_use_ntlm"`
+	StartupView               *string                       `mapstructure:"startup_view" required:"false" cty:"startup_view" hcl:"startup_view"`
+	OnWindowClose             *string                       `mapstructure:"on_window_close" required:"false" cty:"on_window_close" hcl:"on_window_close"`
 	BootScreenConfig          []common.FlatBootScreenConfig `mapstructure:"boot_screen_config" required:"false" cty:"boot_screen_config" hcl:"boot_screen_config"`
 	OCRLibrary                *string                       `mapstructure:"ocr_library" required:"false" cty:"ocr_library" hcl:"ocr_library"`
 	IPSWChecksum              *string                       `mapstructure:"ipsw_checksum" required:"true" cty:"ipsw_checksum" hcl:"ipsw_checksum"`
@@ -188,6 +190,8 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"winrm_use_ssl":                &hcldec.AttrSpec{Name: "winrm_use_ssl", Type: cty.Bool, Required: false},
 		"winrm_insecure":               &hcldec.AttrSpec{Name: "winrm_insecure", Type: cty.Bool, Required: false},
 		"winrm_use_ntlm":               &hcldec.AttrSpec{Name: "winrm_use_ntlm", Type: cty.Bool, Required: false},
+		"startup_view":                 &hcldec.AttrSpec{Name: "startup_view", Type: cty.String, Required: false},
+		"on_window_close":              &hcldec.AttrSpec{Name: "on_window_close", Type: cty.String, Required: false},
 		"boot_screen_config":           &hcldec.BlockListSpec{TypeName: "boot_screen_config", Nested: hcldec.ObjectSpec((*common.FlatBootScreenConfig)(nil).HCL2Spec())},
 		"ocr_library":                  &hcldec.AttrSpec{Name: "ocr_library", Type: cty.String, Required: false},
 		"ipsw_checksum":                &hcldec.AttrSpec{Name: "ipsw_checksum", Type: cty.String, Required: false},

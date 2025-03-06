@@ -292,3 +292,25 @@ Each command itself is an array of strings, where each string is an argument to
 template](/packer/docs/templates/legacy_json_templates/engine). The only available
 variable is `Name` which is replaced with the unique name of the VM, which is
 required for many `prlctl` calls.
+
+## VM Configuration
+
+<!-- Code generated from the comments of the VMConfig struct in builder/parallels/common/vm_config.go; DO NOT EDIT MANUALLY -->
+
+VMConfig contains various configuration options for the VM.
+
+<!-- End of code generated from the comments of the VMConfig struct in builder/parallels/common/vm_config.go; -->
+
+
+### Optional:
+
+<!-- Code generated from the comments of the VMConfig struct in builder/parallels/common/vm_config.go; DO NOT EDIT MANUALLY -->
+
+- `startup_view` (string) - StartupView specifies the view to be shown when the VM starts.
+  Possible values are: same, window, coherence, fullscreen, modality, headless.
+  MacOS VMs in Apple Silicon Chip Macs do not support coherence, fullscreen and modality.
+
+- `on_window_close` (string) - OnWindowClose specifies the action to be taken on VM when the VM window is closed.
+  Possible values are: suspend, shutdown, stop, ask, keep-running.
+
+<!-- End of code generated from the comments of the VMConfig struct in builder/parallels/common/vm_config.go; -->
