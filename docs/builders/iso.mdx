@@ -140,6 +140,10 @@ can also be supplied to override the typical auto-generated key:
   files without loading them into memory. If any paths are specified by both,
   the contents in `cd_content` will take precedence.
 
+- `cd_label` (string) - The label to use for the CD that is attached when the VM is booted.
+  This is most useful for cloud-init, Kickstart or other early initialization tools, which
+  can benefit from labelled disks. By default, the label will be 'packer'.
+
 - `guest_os_type` (string) - The guest OS type being installed. By default
   this is "other", but you can get _dramatic_ performance improvements by
   setting this to the proper value. To view all available values for this run
