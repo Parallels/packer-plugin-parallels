@@ -220,6 +220,7 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 		&commonsteps.StepCreateCD{
 			Files:   b.config.CDConfig.CDFiles,
 			Content: b.config.CDConfig.CDContent,
+			Label:   b.config.CDConfig.CDLabel,
 		},
 		commonsteps.HTTPServerFromHTTPConfig(&b.config.HTTPConfig),
 		new(stepCreateVM),
