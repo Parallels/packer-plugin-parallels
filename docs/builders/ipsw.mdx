@@ -360,3 +360,17 @@ Each command itself is an array of strings, where each string is an argument to
 `prlctl`. Each argument is treated as a [template engine](/packer/docs/templates/legacy_json_templates/engine). The only available
 variable is `Name` which is replaced with the unique name of the VM, which is
 required for many `prlctl` calls.
+
+## VM Configuration
+
+@include 'builder/parallels/common/VMConfig.mdx'
+
+### Optional:
+
+@include 'builder/parallels/common/VMConfig-not-required.mdx'
+
+## BootScreen Configuration
+
+### Optional:
+
+@include 'builder/parallels/common/BootScreenConfig-not-required.mdx'

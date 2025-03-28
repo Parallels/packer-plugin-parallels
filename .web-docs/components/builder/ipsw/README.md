@@ -317,6 +317,9 @@ wget http://{{ .HTTPIP }}:{{ .HTTPPort }}/foo/bar/preseed.cfg
 - `http_bind_address` (string) - This is the bind address for the HTTP server. Defaults to 0.0.0.0 so that
   it will work with any network interface.
 
+- `http_network_protocol` (string) - Defines the HTTP Network protocol. Valid options are `tcp`, `tcp4`, `tcp6`,
+  `unix`, and `unixpacket`. This value defaults to `tcp`.
+
 <!-- End of code generated from the comments of the HTTPConfig struct in multistep/commonsteps/http_config.go; -->
 
 
@@ -437,3 +440,44 @@ Each command itself is an array of strings, where each string is an argument to
 `prlctl`. Each argument is treated as a [template engine](/packer/docs/templates/legacy_json_templates/engine). The only available
 variable is `Name` which is replaced with the unique name of the VM, which is
 required for many `prlctl` calls.
+
+## VM Configuration
+
+<!-- Code generated from the comments of the VMConfig struct in builder/parallels/common/vm_config.go; DO NOT EDIT MANUALLY -->
+
+VMConfig contains various configuration options for the VM.
+
+<!-- End of code generated from the comments of the VMConfig struct in builder/parallels/common/vm_config.go; -->
+
+
+### Optional:
+
+<!-- Code generated from the comments of the VMConfig struct in builder/parallels/common/vm_config.go; DO NOT EDIT MANUALLY -->
+
+- `startup_view` (string) - StartupView specifies the view to be shown when the VM starts.
+  Possible values are: same, window, coherence, fullscreen, modality, headless.
+  MacOS VMs in Apple Silicon Chip Macs do not support coherence, fullscreen and modality.
+
+- `on_window_close` (string) - OnWindowClose specifies the action to be taken on VM when the VM window is closed.
+  Possible values are: suspend, shutdown, stop, ask, keep-running.
+
+<!-- End of code generated from the comments of the VMConfig struct in builder/parallels/common/vm_config.go; -->
+
+
+## BootScreen Configuration
+
+### Optional:
+
+<!-- Code generated from the comments of the BootScreenConfig struct in builder/parallels/common/boot_screen_config.go; DO NOT EDIT MANUALLY -->
+
+- `screen_name` (string) - Screen name to identify
+
+- `matching_strings` ([]string) - Strings present in the screen to identify this screen
+
+- `is_last_screen` (bool) - Specifies if the current screen is the last screen
+  Screen based boot will stop after this screen
+
+- `execute_only_once` (bool) - If true, the screen will be deleted after first execution
+  Default value is false
+
+<!-- End of code generated from the comments of the BootScreenConfig struct in builder/parallels/common/boot_screen_config.go; -->

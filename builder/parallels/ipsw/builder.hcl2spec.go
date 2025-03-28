@@ -25,6 +25,7 @@ type FlatConfig struct {
 	HTTPPortMax               *int                          `mapstructure:"http_port_max" cty:"http_port_max" hcl:"http_port_max"`
 	HTTPAddress               *string                       `mapstructure:"http_bind_address" cty:"http_bind_address" hcl:"http_bind_address"`
 	HTTPInterface             *string                       `mapstructure:"http_interface" undocumented:"true" cty:"http_interface" hcl:"http_interface"`
+	HTTPNetworkProtocol       *string                       `mapstructure:"http_network_protocol" cty:"http_network_protocol" hcl:"http_network_protocol"`
 	BootGroupInterval         *string                       `mapstructure:"boot_keygroup_interval" cty:"boot_keygroup_interval" hcl:"boot_keygroup_interval"`
 	BootWait                  *string                       `mapstructure:"boot_wait" cty:"boot_wait" hcl:"boot_wait"`
 	BootCommand               []string                      `mapstructure:"boot_command" cty:"boot_command" hcl:"boot_command"`
@@ -87,6 +88,8 @@ type FlatConfig struct {
 	WinRMUseSSL               *bool                         `mapstructure:"winrm_use_ssl" cty:"winrm_use_ssl" hcl:"winrm_use_ssl"`
 	WinRMInsecure             *bool                         `mapstructure:"winrm_insecure" cty:"winrm_insecure" hcl:"winrm_insecure"`
 	WinRMUseNTLM              *bool                         `mapstructure:"winrm_use_ntlm" cty:"winrm_use_ntlm" hcl:"winrm_use_ntlm"`
+	StartupView               *string                       `mapstructure:"startup_view" required:"false" cty:"startup_view" hcl:"startup_view"`
+	OnWindowClose             *string                       `mapstructure:"on_window_close" required:"false" cty:"on_window_close" hcl:"on_window_close"`
 	BootScreenConfig          []common.FlatBootScreenConfig `mapstructure:"boot_screen_config" required:"false" cty:"boot_screen_config" hcl:"boot_screen_config"`
 	OCRLibrary                *string                       `mapstructure:"ocr_library" required:"false" cty:"ocr_library" hcl:"ocr_library"`
 	IPSWChecksum              *string                       `mapstructure:"ipsw_checksum" required:"true" cty:"ipsw_checksum" hcl:"ipsw_checksum"`
@@ -124,6 +127,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"http_port_max":                &hcldec.AttrSpec{Name: "http_port_max", Type: cty.Number, Required: false},
 		"http_bind_address":            &hcldec.AttrSpec{Name: "http_bind_address", Type: cty.String, Required: false},
 		"http_interface":               &hcldec.AttrSpec{Name: "http_interface", Type: cty.String, Required: false},
+		"http_network_protocol":        &hcldec.AttrSpec{Name: "http_network_protocol", Type: cty.String, Required: false},
 		"boot_keygroup_interval":       &hcldec.AttrSpec{Name: "boot_keygroup_interval", Type: cty.String, Required: false},
 		"boot_wait":                    &hcldec.AttrSpec{Name: "boot_wait", Type: cty.String, Required: false},
 		"boot_command":                 &hcldec.AttrSpec{Name: "boot_command", Type: cty.List(cty.String), Required: false},
@@ -186,6 +190,8 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"winrm_use_ssl":                &hcldec.AttrSpec{Name: "winrm_use_ssl", Type: cty.Bool, Required: false},
 		"winrm_insecure":               &hcldec.AttrSpec{Name: "winrm_insecure", Type: cty.Bool, Required: false},
 		"winrm_use_ntlm":               &hcldec.AttrSpec{Name: "winrm_use_ntlm", Type: cty.Bool, Required: false},
+		"startup_view":                 &hcldec.AttrSpec{Name: "startup_view", Type: cty.String, Required: false},
+		"on_window_close":              &hcldec.AttrSpec{Name: "on_window_close", Type: cty.String, Required: false},
 		"boot_screen_config":           &hcldec.BlockListSpec{TypeName: "boot_screen_config", Nested: hcldec.ObjectSpec((*common.FlatBootScreenConfig)(nil).HCL2Spec())},
 		"ocr_library":                  &hcldec.AttrSpec{Name: "ocr_library", Type: cty.String, Required: false},
 		"ipsw_checksum":                &hcldec.AttrSpec{Name: "ipsw_checksum", Type: cty.String, Required: false},
