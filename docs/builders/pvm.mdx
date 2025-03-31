@@ -114,6 +114,10 @@ can also be supplied to override the typical auto-generated key:
   files without loading them into memory. If any paths are specified by both,
   the contents in `cd_content` will take precedence.
 
+- `cd_label` (string) - The label to use for the CD that is attached when the VM is booted.
+  This is most useful for cloud-init, Kickstart or other early initialization tools, which
+  can benefit from labelled disks. By default, the label will be 'packer'.
+
 - `output_directory` (string) - This is the path to the directory where the
   resulting virtual machine will be created. This may be relative or absolute.
   If relative, the path is relative to the working directory when `packer`
