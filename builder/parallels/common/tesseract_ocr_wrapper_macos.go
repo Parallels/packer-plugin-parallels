@@ -1,6 +1,9 @@
 // Copyright (c) Parallels International GmBH
 // SPDX-License-Identifier: MPL-2.0
 
+//go:build darwin
+// +build darwin
+
 package common
 
 import (
