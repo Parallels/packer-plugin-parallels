@@ -118,6 +118,10 @@ func (s *StepScreenBasedBoot) Run(ctx context.Context, state multistep.StateBag)
 	minDelay := 1 * time.Second
 	lastScreen := BootScreenConfig{}
 	ocrWrapper, _ := NewOCRWrapper(s.OCRLibrary, s.ScreenConfigs)
+
+	if _, ok := ocrWrapper.(*OCRWrapperOther); ok {
+		return multistep.ActionContinue
+	}
 	for {
 		log.Println("Checking screen...")
 

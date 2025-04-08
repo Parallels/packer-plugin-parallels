@@ -3,7 +3,10 @@
 
 package common
 
-import "errors"
+import (
+	"errors"
+	"runtime"
+)
 
 type OCRWrapper interface {
 	// IdentifyCurrentScreen takes a screenshot of the current screen and returns the BootScreenConfig that matches the screen.
@@ -13,11 +16,16 @@ type OCRWrapper interface {
 }
 
 func NewOCRWrapper(OCRLibrary string, ScreenConfigs map[string]BootScreenConfig) (OCRWrapper, error) {
-	if OCRLibrary == "vision" {
-		return NewVisionOCRWrapper(ScreenConfigs), nil
-	} else if OCRLibrary == "tesseract" {
-		return NewTesseractOCRWrapper(ScreenConfigs), nil
-	} else {
-		return nil, errors.New("invalid OCR library")
+
+	if runtime.GOOS == "darwin" {
+		if OCRLibrary == "vision" {
+			return NewVisionOCRWrapper(ScreenConfigs), nil
+		} else if OCRLibrary == "tesseract" {
+			return NewTesseractOCRWrapper(ScreenConfigs), nil
+		} else {
+			return nil, errors.New("invalid OCR library")
+		}
 	}
+	// For other platforms, just an empty wrapper that does nothing
+	return NewOCRWrapperOthers()
 }
