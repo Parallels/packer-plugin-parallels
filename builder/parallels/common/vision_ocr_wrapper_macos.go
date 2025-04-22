@@ -3,6 +3,9 @@
 
 //go:generate packer-sdc struct-markdown
 
+//go:build darwin
+// +build darwin
+
 package common
 
 /*
