@@ -12,16 +12,14 @@ import "errors"
 // To avoid validation errors, we need to implement the interface
 // but it will not perform any actual OCR operations.
 
-type TesseractOCRWrapper struct {
-}
+type TesseractOCRWrapper struct{}
 
 func NewTesseractOCRWrapper(ScreenConfigs map[string]BootScreenConfig) *TesseractOCRWrapper {
 	return &TesseractOCRWrapper{}
 }
 
 func (c *TesseractOCRWrapper) IdentifyCurrentScreen(imagePath string) (bootScreenConfig BootScreenConfig, err error) {
-
-	return nil, errrors.New("TesseractOCRWrapper is not implemented other than darwin")
+	return BootScreenConfig{}, errors.New("TesseractOCRWrapper is not implemented other than darwin")
 }
 
 func (c *TesseractOCRWrapper) RemoveBootScreenConfigIfExist(screenName string) {

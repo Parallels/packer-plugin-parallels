@@ -3,6 +3,9 @@
 
 //go:generate packer-sdc struct-markdown
 
+//go:build darwin
+// +build darwin
+
 package common
 
 /*
@@ -36,6 +39,7 @@ int retrieveWindowId(int pid)
 }
 */
 import "C"
+
 import (
 	"bytes"
 	"errors"
@@ -49,8 +53,7 @@ import (
 )
 
 // VisionOCR is a struct that acts as an Adapter to Apple's Vision Framework for Optical Character Recognition.
-type WindowIDDetector struct {
-}
+type WindowIDDetector struct{}
 
 func (s *WindowIDDetector) retrieveVMUUID(vmName string, state multistep.StateBag) (string, error) {
 	driver := state.Get("driver").(Driver)
