@@ -1,8 +1,8 @@
 // Copyright (c) Parallels International GmBH
 // SPDX-License-Identifier: MPL-2.0
 
-//go:build linux || windows
-// +build linux windows
+//go:build linux || windows || netbsd || openbsd || freebsd || solaris
+// +build linux windows netbsd openbsd freebsd solaris
 
 package common
 

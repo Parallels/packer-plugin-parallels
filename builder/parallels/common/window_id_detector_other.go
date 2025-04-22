@@ -1,5 +1,5 @@
-//go:build linux || windows
-// +build linux windows
+//go:build linux || windows || netbsd || openbsd || freebsd || solaris
+// +build linux windows netbsd openbsd freebsd solaris
 
 package common
 
