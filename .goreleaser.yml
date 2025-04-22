@@ -3,8 +3,6 @@
 
 # This is an example goreleaser.yaml file with some defaults.
 # Make sure to check the documentation at http://goreleaser.com
-env:
-  - CGO_ENABLED=0
 before:
   hooks:
     # We strongly recommend running tests to catch any regression before release.
@@ -53,6 +51,8 @@ builds:
     goarch:
       - amd64
       - arm64
+    gcflags:
+      - CGO_ENABLED=1
     binary: "{{ .ProjectName }}_v{{ .Version }}_{{ .Env.API_VERSION }}_{{ .Os }}_{{ .Arch }}"
 #   -
 #     id: other-builds
