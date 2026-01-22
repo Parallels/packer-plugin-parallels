@@ -31,6 +31,7 @@ type FlatConfig struct {
 	BootCommand               []string                      `mapstructure:"boot_command" cty:"boot_command" hcl:"boot_command"`
 	OutputDir                 *string                       `mapstructure:"output_directory" required:"false" cty:"output_directory" hcl:"output_directory"`
 	CpuCount                  *int                          `mapstructure:"cpus" required:"false" cty:"cpus" hcl:"cpus"`
+	CpuType                   *string                       `mapstructure:"cpu_type" required:"false" cty:"cpu_type" hcl:"cpu_type"`
 	MemorySize                *int                          `mapstructure:"memory" required:"false" cty:"memory" hcl:"memory"`
 	Sound                     *bool                         `mapstructure:"sound" required:"false" cty:"sound" hcl:"sound"`
 	USB                       *bool                         `mapstructure:"usb" required:"false" cty:"usb" hcl:"usb"`
@@ -133,6 +134,7 @@ func (*FlatConfig) HCL2Spec() map[string]hcldec.Spec {
 		"boot_command":                 &hcldec.AttrSpec{Name: "boot_command", Type: cty.List(cty.String), Required: false},
 		"output_directory":             &hcldec.AttrSpec{Name: "output_directory", Type: cty.String, Required: false},
 		"cpus":                         &hcldec.AttrSpec{Name: "cpus", Type: cty.Number, Required: false},
+		"cpu_type":                     &hcldec.AttrSpec{Name: "cpu_type", Type: cty.String, Required: false},
 		"memory":                       &hcldec.AttrSpec{Name: "memory", Type: cty.Number, Required: false},
 		"sound":                        &hcldec.AttrSpec{Name: "sound", Type: cty.Bool, Required: false},
 		"usb":                          &hcldec.AttrSpec{Name: "usb", Type: cty.Bool, Required: false},

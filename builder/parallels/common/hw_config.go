@@ -15,6 +15,10 @@ type HWConfig struct {
 	// The number of cpus to use for building the VM.
 	// Defaults to 1.
 	CpuCount int `mapstructure:"cpus" required:"false"`
+	// The CPU type to use for building the VM.
+	// Valid values are "x86" or "arm". If not specified, Parallels will use
+	// the default CPU type for the host architecture.
+	CpuType string `mapstructure:"cpu_type" required:"false"`
 	// The amount of memory to use for building the VM in
 	// megabytes. Defaults to 512 megabytes.
 	MemorySize int `mapstructure:"memory" required:"false"`
@@ -35,6 +39,10 @@ func (c *HWConfig) Prepare(ctx *interpolate.Context) []error {
 	}
 	if c.CpuCount == 0 {
 		c.CpuCount = 1
+	}
+
+	if c.CpuType != "" && c.CpuType != "x86" && c.CpuType != "arm" {
+		errs = append(errs, fmt.Errorf("An invalid cpu_type was specified. Valid values are 'x86' or 'arm': %s", c.CpuType))
 	}
 
 	if c.MemorySize < 0 {
