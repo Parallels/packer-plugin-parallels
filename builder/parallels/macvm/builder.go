@@ -142,7 +142,7 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 	}
 
 	generatedData := map[string]interface{}{"generated_data": state.Get("generated_data")}
-	return parallelscommon.NewArtifact(b.config.OutputDir, generatedData)
+	return parallelscommon.NewArtifact(b.config.OutputDir, generatedData, b.config.APIEndpoint, b.config.SourceImageList)
 }
 
 // Cancel.
