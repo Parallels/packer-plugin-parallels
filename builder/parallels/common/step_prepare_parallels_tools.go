@@ -44,8 +44,8 @@ func (s *StepPrepareParallelsTools) Run(ctx context.Context, state multistep.Sta
 	if _, err := os.Stat(path); err != nil {
 		state.Put("error", fmt.Errorf(
 			"Couldn't find Parallels Tools for the '%s' flavor! Please, check the\n"+
-				"value of 'parallels_tools_flavor'. Valid flavors are: 'win', 'lin',\n"+
-				"'mac', 'os2' and 'other'", s.ParallelsToolsFlavor))
+				"value of 'parallels_tools_flavor'. Valid flavors are: 'win', 'win-arm',\n"+
+				"'lin', 'lin-arm', 'mac', 'os2' and 'other'", s.ParallelsToolsFlavor))
 		return multistep.ActionHalt
 	}
 
