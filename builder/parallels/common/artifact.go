@@ -5,11 +5,13 @@ package common
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 
 	packersdk "github.com/hashicorp/packer-plugin-sdk/packer"
+	"github.com/hashicorp/packer-plugin-sdk/packer/registry/image"
 )
 
 // BuilderId is the common builder ID to all of these artifacts.
@@ -22,8 +24,10 @@ var unnecessaryFiles = []string{"\\.log$", "\\.backup$", "\\.Backup$", "\\.app"}
 // Artifact is the result of running the parallels builder, namely a set
 // of files associated with the resulting machine.
 type artifact struct {
-	dir string
-	f   []string
+	APIEndpoint     string
+	SourceImageList string
+	dir             string
+	f               []string
 
 	// StateData should store data such as GeneratedData
 	// to be shared with post-processors
@@ -32,7 +36,7 @@ type artifact struct {
 
 // NewArtifact returns a Parallels artifact containing the files
 // in the given directory.
-func NewArtifact(dir string, generatedData map[string]interface{}) (packersdk.Artifact, error) {
+func NewArtifact(dir string, generatedData map[string]interface{}, apiEndpoint string, sourceImageList string) (packersdk.Artifact, error) {
 	files := make([]string, 0, 5)
 	visit := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -64,9 +68,11 @@ func NewArtifact(dir string, generatedData map[string]interface{}) (packersdk.Ar
 	}
 
 	return &artifact{
-		dir:       dir,
-		f:         files,
-		StateData: generatedData,
+		APIEndpoint:     apiEndpoint,
+		SourceImageList: sourceImageList,
+		dir:             dir,
+		f:               files,
+		StateData:       generatedData,
 	}, nil
 }
 
@@ -87,9 +93,33 @@ func (a *artifact) String() string {
 }
 
 func (a *artifact) State(name string) interface{} {
+	log.Printf("[TRACE] Artifact State is %s", name)
+
+	if name == image.ArtifactStateURI {
+		return a.buildHCPackerRegistryMetadata()
+	}
 	return a.StateData[name]
 }
 
 func (a *artifact) Destroy() error {
 	return os.RemoveAll(a.dir)
+}
+
+func (a *artifact) buildHCPackerRegistryMetadata() interface{} {
+	region := a.APIEndpoint
+	if region == "" {
+		region = "local"
+	}
+
+	log.Printf("[TRACE] Region is %s", a.APIEndpoint)
+	log.Printf("[TRACE] SourceId is %s", a.SourceImageList)
+
+	img, err := image.FromArtifact(a, image.WithRegion(region), image.WithSourceID(a.SourceImageList))
+
+	if err != nil {
+		log.Printf("[TRACE] error encountered when creating HCP Packer registry image for artifact: %s", err)
+		return nil
+	}
+
+	return img
 }

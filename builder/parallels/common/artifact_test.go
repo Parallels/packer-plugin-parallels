@@ -33,7 +33,7 @@ func TestNewArtifact(t *testing.T) {
 	}
 
 	generatedData := map[string]interface{}{"generated_data": "data"}
-	a, err := NewArtifact(td, generatedData)
+	a, err := NewArtifact(td, generatedData, "", "")
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
