@@ -22,6 +22,8 @@ import (
 
 // Config is the configuration structure for the builder.
 type Config struct {
+	APIEndpoint                         string `mapstructure:"api_endpoint"`
+	SourceImageList                     string `mapstructure:"source_image_list"`
 	common.PackerConfig                 `mapstructure:",squash"`
 	commonsteps.FloppyConfig            `mapstructure:",squash"`
 	commonsteps.CDConfig                `mapstructure:",squash"`
