@@ -31,12 +31,18 @@ func (s *stepCreateVM) Run(ctx context.Context, state multistep.StateBag) multis
 
 	commands := make([][]string, 3)
 
-	commands[0] = []string{
+	createCmd := []string{
 		"create", name,
 		"--distribution", config.GuestOSType,
 		"--dst", config.OutputDir,
 		"--no-hdd",
 	}
+
+	if config.HWConfig.CpuType != "" {
+		createCmd = append(createCmd, "--cpu-type", config.HWConfig.CpuType)
+	}
+
+	commands[0] = createCmd
 	commands[1] = []string{
 		"set", name,
 		"--cpus", strconv.Itoa(config.HWConfig.CpuCount),
