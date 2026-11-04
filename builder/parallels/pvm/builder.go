@@ -66,6 +66,7 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 			Files:       b.config.FloppyConfig.FloppyFiles,
 			Directories: b.config.FloppyConfig.FloppyDirectories,
 			Label:       b.config.FloppyConfig.FloppyLabel,
+			Content:     b.config.FloppyConfig.FloppyContent,
 		},
 		&commonsteps.StepCreateCD{
 			Files:   b.config.CDConfig.CDFiles,
