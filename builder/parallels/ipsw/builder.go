@@ -33,6 +33,8 @@ type Builder struct {
 }
 
 type Config struct {
+	APIEndpoint                         string `mapstructure:"api_endpoint"`
+	SourceImageList                     string `mapstructure:"source_image_list"`
 	common.PackerConfig                 `mapstructure:",squash"`
 	commonsteps.HTTPConfig              `mapstructure:",squash"`
 	bootcommand.BootConfig              `mapstructure:",squash"`
@@ -295,5 +297,5 @@ func (b *Builder) Run(ctx context.Context, ui packersdk.Ui, hook packersdk.Hook)
 	}
 
 	generatedData := map[string]interface{}{"generated_data": state.Get("generated_data")}
-	return parallelscommon.NewArtifact(b.config.OutputDir, generatedData)
+	return parallelscommon.NewArtifact(b.config.OutputDir, generatedData, b.config.APIEndpoint, b.config.SourceImageList)
 }
